@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wordbook</title>
+<meta name="description" content="A personal English wordbook.">
+<meta name="theme-color" content="#f4f1ea">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Wordbook">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root {
+  --paper: #f4f1ea;
+  --paper-deep: #ebe6da;
+  --ink: #1d1b18;
+  --ink-2: #57524a;
+  --ink-3: #8c8578;
+  --rule: #d6d0c3;
+  --danger: #9b3a26;
+  --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif;
+  --gutter: 24px;
+  --col: 600px;
+  --bar: 76px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+/* paper grain: a faint noise laid over everything */
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: .85;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .42  0 0 0 0 .37  0 0 0 0 .28  0 0 0 .2 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5px solid var(--ink); outline-offset: 3px; }
+[hidden] { display: none !important; }
+
+.label {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+.num { font-variant-numeric: lining-nums tabular-nums; }
+
+.wrap {
+  max-width: calc(var(--col) + var(--gutter) * 2);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ---------- Masthead ---------- */
+.mast { padding-top: calc(var(--safe-t) + 28px); }
+.mast-top { display: flex; justify-content: space-between; align-items: baseline; }
+.title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: -.01em;
+  margin: 20px 0 24px;
+}
+/* stats double as the filter: a title-block of three cells */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1.5px solid var(--ink);
+  border-bottom: 1px solid var(--rule);
+}
+.stat {
+  position: relative;
+  text-align: left;
+  padding: 12px 12px 12px 0;
+  min-height: 76px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.stat + .stat { padding-left: 14px; border-left: 1px solid var(--rule); }
+.stat .n {
+  font-family: var(--serif);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--ink-3);
+  transition: color .15s;
+}
+.stat .label { margin-top: 10px; }
+.stat[aria-pressed="true"] .n { color: var(--ink); }
+.stat[aria-pressed="true"] .label { color: var(--ink); }
+.stat[aria-pressed="true"]::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -1.5px; height: 4px; background: var(--ink);
+}
+.stat + .stat[aria-pressed="true"]::before { left: -1px; }
+
+/* ---------- Search ---------- */
+.search {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--paper);
+  padding: 18px 0 0;
+}
+.search-row {
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--ink);
+}
+.search-row svg { flex: none; color: var(--ink-3); }
+.search input {
+  flex: 1; min-width: 0;
+  border: 0; background: transparent;
+  font-size: 16px;
+  padding: 12px 0;
+  outline: none;
+}
+.search input::placeholder { color: var(--ink-3); }
+.search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.clear-btn { width: 44px; height: 44px; margin-right: -12px; color: var(--ink-3); display: grid; place-items: center; }
+
+.list-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 28px 0 10px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* ---------- Entries ---------- */
+.entries { list-style: none; margin: 0; padding: 0; }
+.entry { border-bottom: 1px solid var(--rule); }
+.entry-head {
+  display: grid;
+  grid-template-columns: 1fr 44px 44px;
+  align-items: start;
+  column-gap: 2px;
+}
+.entry-main {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  text-align: left;
+  padding: 18px 0 18px;
+  min-height: 72px;
+}
+.entry-no {
+  font-size: 11px;
+  color: var(--ink-3);
+  padding-top: 9px;
+  letter-spacing: .04em;
+}
+.entry-word {
+  font-family: var(--serif);
+  font-size: 23px;
+  line-height: 1.25;
+  word-break: break-word;
+}
+.entry-pos {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-3);
+  margin-left: 8px;
+  white-space: nowrap;
+}
+.entry-meaning {
+  grid-column: 2;
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+.entry-meaning.empty { color: var(--ink-3); font-style: italic; }
+.entry-head > .icon-btn { margin-top: 14px; }
+
+.icon-btn {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  color: var(--ink-2);
+  border-radius: 50%;
+}
+.icon-btn:active { background: var(--paper-deep); }
+.icon-btn.speaking { color: var(--ink); }
+.icon-btn.speaking svg .wave { animation: pulse .9s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .2; } }
+
+.mark {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 1.25px solid var(--ink-3);
+  display: grid; place-items: center;
+  color: var(--paper);
+  transition: background .15s, border-color .15s;
+}
+.mark svg { opacity: 0; }
+[aria-pressed="true"] > .mark, .mark.on { background: var(--ink); border-color: var(--ink); }
+[aria-pressed="true"] > .mark svg, .mark.on svg { opacity: 1; }
+
+.entry-body {
+  padding: 0 0 22px 34px;
+}
+.entry-field { padding: 14px 0 0; }
+.entry-field + .entry-field { border-top: 1px dashed var(--rule); margin-top: 14px; }
+.entry-field .label { display: block; margin-bottom: 4px; }
+.example-row { display: grid; grid-template-columns: 1fr 44px; align-items: start; gap: 4px; }
+.example {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.55;
+  margin: 0;
+  padding-top: 8px;
+}
+.example-row .icon-btn { margin-right: -2px; }
+.note { margin: 0; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; }
+.entry-actions { display: flex; gap: 28px; margin-top: 18px; }
+.text-btn {
+  min-height: 44px;
+  font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px;
+}
+.text-btn.danger { color: var(--danger); }
+.text-btn:disabled { opacity: .35; cursor: default; }
+
+/* ---------- Empty ---------- */
+.empty-state { padding: 64px 0 40px; }
+.empty-state h2 {
+  font-family: var(--serif); font-weight: 400; font-style: italic;
+  font-size: 28px; line-height: 1.25; margin: 0 0 12px;
+}
+.empty-state p { margin: 0; color: var(--ink-2); max-width: 30em; }
+
+/* ---------- Data / footer ---------- */
+.data {
+  margin-top: 72px;
+  border-top: 1.5px solid var(--ink);
+  padding: 14px 0 0;
+}
+.data p { color: var(--ink-2); margin: 10px 0 8px; max-width: 32em; font-size: 14px; }
+.data-actions { display: flex; gap: 28px; }
+.colophon { padding: 48px 0 calc(var(--bar) + var(--safe-b) + 32px); color: var(--ink-3); }
+
+/* ---------- Bottom bar ---------- */
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  padding: 12px 0 calc(12px + var(--safe-b));
+}
+.bar .wrap { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; }
+.btn {
+  height: 52px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  border: 1px solid var(--ink);
+  font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  transition: background .12s, color .12s;
+}
+.btn:active { background: var(--paper-deep); }
+.btn.solid { background: var(--ink); color: var(--paper); }
+.btn.solid:active { background: #3a3631; }
+.btn:disabled { opacity: .35; cursor: default; }
+.btn .count { font-weight: 400; letter-spacing: .04em; opacity: .7; }
+
+/* ---------- Full-screen views (form, review) ---------- */
+.view {
+  position: fixed; inset: 0; z-index: 20;
+  background: var(--paper);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  animation: rise .18s ease-out;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+.view-top {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--paper);
+  padding-top: var(--safe-t);
+  border-bottom: 1px solid var(--rule);
+}
+.view-top .wrap {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  min-height: 56px;
+}
+/* letter-spacing leaves a trailing gap after the last letter; indent by the same amount so the word sits on the true center */
+.view-top .label { text-align: center; color: var(--ink); padding-left: .14em; }
+.top-btn {
+  min-height: 44px; padding: 0 2px;
+  font-size: 15px; color: var(--ink-2);
+  justify-self: start;
+}
+.top-btn.right { justify-self: end; color: var(--ink); font-weight: 600; }
+
+/* form */
+.form { padding-top: 12px; padding-bottom: calc(48px + var(--safe-b)); }
+.fld { display: block; padding: 22px 0 0; }
+.fld .label { display: flex; justify-content: space-between; }
+.fld input[type=text], .fld textarea {
+  display: block; width: 100%;
+  border: 0; border-bottom: 1px solid var(--rule);
+  background: transparent;
+  padding: 10px 0 10px;
+  font-size: 16px;
+  line-height: 1.55;
+  border-radius: 0;
+  outline: none;
+  resize: none;
+  transition: border-color .15s;
+}
+.fld input[type=text]:focus, .fld textarea:focus { border-bottom-color: var(--ink); }
+.fld input.serif-input { font-family: var(--serif); font-size: 28px; line-height: 1.3; padding-top: 6px; }
+.fld textarea.serif-italic { font-family: var(--serif); font-style: italic; font-size: 18px; }
+.fld.invalid input { border-bottom-color: var(--danger); }
+.err { color: var(--danger); font-size: 13px; margin-top: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip {
+  min-height: 36px; padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: 18px;
+  font-family: var(--serif); font-style: italic; font-size: 15px;
+  color: var(--ink-2);
+}
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%;
+  min-height: 60px;
+  margin-top: 26px;
+  border-top: 1.5px solid var(--ink);
+  border-bottom: 1px solid var(--rule);
+  font-size: 16px;
+  text-align: left;
+}
+.toggle-row .mark { width: 24px; height: 24px; }
+.form-delete { margin-top: 36px; }
+
+/* review */
+.review { display: flex; flex-direction: column; min-height: 100%; }
+.review .view-top { position: static; }
+.review > .wrap, .review > .review-bar { width: 100%; }
+.card-say .icon-btn { width: 52px; height: 52px; border: 1px solid var(--rule); }
+.scope { display: flex; gap: 24px; padding-top: 6px; }
+.scope .text-btn { color: var(--ink-3); text-decoration-color: transparent; }
+.scope .text-btn[aria-pressed="true"] { color: var(--ink); text-decoration-color: var(--ink); }
+.progress { height: 1px; background: var(--rule); margin-top: 4px; position: relative; }
+.progress i { position: absolute; left: 0; top: -1px; height: 3px; background: var(--ink); transition: width .25s ease; }
+/* the card hangs from the top, a fixed measure below the progress rule */
+.card {
+  flex: 1;
+  display: flex; flex-direction: column; justify-content: flex-start;
+  padding-top: clamp(40px, 7vh, 72px); padding-bottom: 32px;
+  width: 100%;
+}
+.grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grade .mark { width: 16px; height: 16px; }
+.grade .btn:not(.solid) .mark { border-color: var(--ink-3); }
+.grade .btn.solid .mark.on { background: var(--paper); border-color: var(--paper); color: var(--ink); }
+.card-no { display: flex; justify-content: space-between; }
+.card-word {
+  font-family: var(--serif); font-weight: 400;
+  font-size: 46px; line-height: 1.12; letter-spacing: -.01em;
+  margin: 18px 0 6px;
+  word-break: break-word;
+}
+.card-pos { font-family: var(--serif); font-style: italic; color: var(--ink-3); font-size: 17px; min-height: 1em; }
+.card-say { margin: 20px 0 0; }
+.card-reveal { margin-top: 32px; border-top: 1px solid var(--rule); padding-top: 22px; }
+.card-meaning { font-size: 20px; line-height: 1.55; margin: 0; word-break: break-word; }
+.card-example { margin-top: 22px; }
+.card-hint { color: var(--ink-3); font-family: var(--serif); font-style: italic; font-size: 17px; margin: 0; }
+.review-bar { padding: 12px 0 calc(16px + var(--safe-b)); border-top: 1px solid var(--rule); }
+.review-bar .btn { width: 100%; }
+.done h2 { font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 1.15; margin: 0 0 12px; }
+.done p { color: var(--ink-2); margin: 0; }
+.done-actions { display: grid; gap: 12px; margin-top: 36px; }
+
+/* ---------- Dialog ---------- */
+.scrim {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(29, 27, 24, .28);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 16px 16px calc(16px + var(--safe-b));
+  animation: fade .15s ease-out;
+}
+@keyframes fade { from { opacity: 0; } }
+.dialog {
+  width: 100%; max-width: 440px;
+  background: var(--paper);
+  border-top: 1.5px solid var(--ink);
+  padding: 22px 22px 18px;
+  box-shadow: 0 1px 0 var(--rule);
+}
+.dialog h3 { font-family: var(--serif); font-weight: 400; font-size: 24px; line-height: 1.3; margin: 8px 0 8px; word-break: break-word; }
+.dialog p { margin: 0; color: var(--ink-2); }
+.dialog-actions { display: grid; gap: 10px; margin-top: 24px; }
+.btn.danger { background: var(--danger); border-color: var(--danger); color: #fbf7f2; }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; left: 50%; z-index: 60;
+  bottom: calc(var(--bar) + var(--safe-b) + 16px);
+  transform: translateX(-50%);
+  background: var(--ink); color: var(--paper);
+  padding: 10px 16px;
+  font-size: 14px;
+  max-width: calc(100% - 48px);
+  animation: fade .15s ease-out;
+}
+
+@media (min-width: 760px) {
+  :root { --gutter: 48px; }
+  .mast { padding-top: 64px; }
+  .title { font-size: 56px; }
+  .card-word { font-size: 60px; }
+  .scrim { align-items: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<main id="app"></main>
+<div id="layer"></div>
+<input type="file" id="file" accept="application/json,.json" hidden>
+
+<script>
+(function () {
+'use strict';
+
+/* ================= Data ================= */
+const KEY = 'wordbook.v1';
+let words = load();
+let filter = 'all';
+let query = '';
+const open = new Set();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data.map(normalize).filter(Boolean) : [];
+  } catch (e) { return []; }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(words)); return true; }
+  catch (e) { toast('Could not save. Storage may be full or blocked.'); return false; }
+}
+function uid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+function str(v) { return typeof v === 'string' ? v.trim() : ''; }
+function normalize(w) {
+  if (!w || typeof w !== 'object') return null;
+  const word = str(w.word);
+  if (!word) return null;
+  const now = Date.now();
+  return {
+    id: str(w.id) || uid(),
+    word,
+    meaning: str(w.meaning),
+    pos: str(w.pos),
+    example: str(w.example),
+    note: typeof w.note === 'string' ? w.note.trim() : '',
+    learned: w.learned === true,
+    createdAt: Number(w.createdAt) || now,
+    updatedAt: Number(w.updatedAt) || Number(w.createdAt) || now
+  };
+}
+function byId(id) { return words.find(w => w.id === id); }
+function numbering() {
+  const m = new Map();
+  [...words].sort((a, b) => a.createdAt - b.createdAt).forEach((w, i) => m.set(w.id, i + 1));
+  return m;
+}
+
+/* ================= Speech ================= */
+// iOS Safari notes: voices arrive asynchronously (getVoices() is often empty at first),
+// speak() must run inside a user gesture, and the utterance must stay referenced
+// or it can be garbage-collected mid-sentence. Novelty voices (Bells, Zarvox...) are also en-US.
+const Speech = {
+  ok: 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window,
+  voice: null,
+  current: null,
+  btn: null,
+  NOVELTY: /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|kathy|ralph|grandma|grandpa|eddy|flo|reed|rocko|sandy|shelley/i,
+  pick() {
+    if (!this.ok) return;
+    const vs = speechSynthesis.getVoices() || [];
+    const en = vs.filter(v => (v.lang || '').replace('_', '-').toLowerCase() === 'en-us');
+    const plain = en.filter(v => !this.NOVELTY.test(v.name));
+    const pool = plain.length ? plain : en;
+    const prefer = [/samantha/i, /google us english/i, /aria/i, /jenny/i, /zira/i, /alex/i];
+    let v = null;
+    for (const re of prefer) { v = pool.find(x => re.test(x.name)); if (v) break; }
+    this.voice = v || pool.find(x => x.localService) || pool[0] || null;
+  },
+  init() {
+    if (!this.ok) return;
+    this.pick();
+    if (typeof speechSynthesis.addEventListener === 'function') {
+      speechSynthesis.addEventListener('voiceschanged', () => this.pick());
+    } else {
+      speechSynthesis.onvoiceschanged = () => this.pick();
+    }
+  },
+  speak(text, btn) {
+    if (!this.ok || !text) return;
+    if (!this.voice) this.pick();
+    // cancel only when something is actually queued; cancel()+speak() back to back
+    // has been reported to swallow the new utterance on some iOS versions
+    if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    if (this.voice) u.voice = this.voice;
+    u.rate = 0.92;
+    u.pitch = 1;
+    this.mark(btn);
+    const done = () => { if (this.current === u) { this.current = null; this.mark(null); } };
+    u.onend = done;
+    u.onerror = done;
+    this.current = u;
+    if (speechSynthesis.paused) speechSynthesis.resume();
+    speechSynthesis.speak(u);
+  },
+  mark(btn) {
+    if (this.btn) this.btn.classList.remove('speaking');
+    this.btn = btn || null;
+    if (this.btn) this.btn.classList.add('speaking');
+  }
+};
+Speech.init();
+
+/* ================= Helpers ================= */
+const $ = (s, r = document) => r.querySelector(s);
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+const ICON = {
+  speak: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="wave" d="M15.5 9.2a4 4 0 0 1 0 5.6"/><path class="wave" d="M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',
+  check: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 6.2l2.3 2.3 4.5-4.9"/></svg>',
+  search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg>',
+  close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+};
+function speakBtn(text, label, extra) {
+  if (!Speech.ok) return '';
+  return `<button class="icon-btn ${extra || ''}" data-act="speak" data-text="${esc(text)}" aria-label="${esc(label)}">${ICON.speak}</button>`;
+}
+function pad(n) { return String(n).padStart(3, '0'); }
+function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+
+let toastTimer = null;
+function toast(msg) {
+  const old = $('.toast'); if (old) old.remove();
+  const t = document.createElement('div');
+  t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), 2600);
+}
+
+/* ================= Dialog ================= */
+function dialog({ label, title, body, actions }) {
+  const t = $('.toast'); if (t) t.remove();
+  return new Promise(resolve => {
+    const scrim = document.createElement('div');
+    scrim.className = 'scrim';
+    scrim.innerHTML = `<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t">
+      ${label ? `<div class="label">${esc(label)}</div>` : ''}
+      <h3 id="dlg-t">${esc(title)}</h3>
+      ${body ? `<p>${esc(body)}</p>` : ''}
+      <div class="dialog-actions">${actions.map((a, i) =>
+        `<button class="btn ${a.style || ''}" data-i="${i}">${esc(a.text)}</button>`).join('')}</div>
+    </div>`;
+    const finish = v => { scrim.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') finish(null); };
+    scrim.addEventListener('click', e => {
+      if (e.target === scrim) return finish(null);
+      const b = e.target.closest('[data-i]');
+      if (b) finish(actions[+b.dataset.i].value);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(scrim);
+    const primary = scrim.querySelector('.btn.solid, .btn.danger');
+    (primary || scrim.querySelector('.btn')).focus();
+  });
+}
+
+/* ================= List view ================= */
+function visible() {
+  const q = query.trim().toLowerCase();
+  return words
+    .filter(w => filter === 'all' || (filter === 'learned' ? w.learned : !w.learned))
+    .filter(w => !q || [w.word, w.meaning, w.pos, w.example, w.note].some(f => f.toLowerCase().includes(q)))
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function resultsHTML() {
+  const total = words.length;
+  const list = visible();
+  const nums = numbering();
+  let body;
+  if (!total) {
+    body = `<section class="empty-state">
+      <h2>No words yet.</h2>
+      <p>Add the first word you want to keep. It stays on this device.</p>
+    </section>`;
+  } else if (!list.length) {
+    const what = query.trim()
+      ? `Nothing matches “${esc(query.trim())}”.`
+      : (filter === 'learned' ? 'Nothing learned yet.' : 'Every word is learned.');
+    body = `<section class="empty-state"><h2>${what}</h2>
+      <p>${query.trim() ? 'Try another spelling, or clear the search.' : 'Switch the filter above to see the rest.'}</p></section>`;
+  } else {
+    body = `<div class="list-head">
+        <span class="label">${plural(list.length, 'entry', 'entries')}</span>
+        <span class="label">Newest first</span>
+      </div>
+      <ol class="entries">${list.map(w => entryHTML(w, nums.get(w.id))).join('')}</ol>`;
+  }
+  return body;
+}
+
+function renderList() {
+  const total = words.length;
+  const learned = words.filter(w => w.learned).length;
+  const notyet = total - learned;
+
+  $('#app').innerHTML = `
+  <div class="wrap">
+    <header class="mast">
+      <div class="mast-top">
+        <span class="label">Personal vocabulary</span>
+        <span class="label num">${new Date().getFullYear()}</span>
+      </div>
+      <h1 class="title">Wordbook</h1>
+      <div class="stats" role="group" aria-label="Filter">
+        ${statHTML('all', total, 'All words')}
+        ${statHTML('notyet', notyet, 'Not yet')}
+        ${statHTML('learned', learned, 'Learned')}
+      </div>
+    </header>
+    ${total ? `<div class="search"><label class="search-row">
+      ${ICON.search}
+      <input id="q" type="search" value="${esc(query)}" placeholder="Search words, meanings, notes" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search">
+      <button class="clear-btn" data-act="clear" aria-label="Clear search" ${query ? '' : 'hidden'}>${ICON.close}</button>
+    </label></div>` : ''}
+    <div id="results">${resultsHTML()}</div>
+    <section class="data">
+      <div class="label">Data</div>
+      <p>Words are saved in this browser only. Export a JSON file to back them up or move them to another device.</p>
+      <div class="data-actions">
+        <button class="text-btn" data-act="export" ${total ? '' : 'disabled'}>Export JSON</button>
+        <button class="text-btn" data-act="import">Import JSON</button>
+      </div>
+    </section>
+    <footer class="colophon label">Wordbook &middot; Stored locally${Speech.ok ? '' : ' &middot; Speech not supported here'}</footer>
+  </div>
+  <nav class="bar"><div class="wrap">
+    <button class="btn" data-act="review" ${total ? '' : 'disabled'}>Review</button>
+    <button class="btn solid" data-act="add">Add word</button>
+  </div></nav>`;
+}
+// search only swaps the results, so the input (and the phone keyboard) stays put
+function renderResults() {
+  $('#results').innerHTML = resultsHTML();
+  const c = $('.clear-btn'); if (c) c.hidden = !query;
+}
+
+function statHTML(key, n, label) {
+  return `<button class="stat" data-act="filter" data-f="${key}" aria-pressed="${filter === key}">
+    <span class="n num">${n}</span><span class="label">${label}</span></button>`;
+}
+
+function entryHTML(w, no) {
+  const isOpen = open.has(w.id);
+  return `<li class="entry" data-id="${esc(w.id)}">
+    <div class="entry-head">
+      <button class="entry-main" data-act="toggle" aria-expanded="${isOpen}">
+        <span class="entry-no num">${pad(no)}</span>
+        <span><span class="entry-word">${esc(w.word)}</span>${w.pos ? `<span class="entry-pos">${esc(w.pos)}</span>` : ''}</span>
+        <span class="entry-meaning ${w.meaning ? '' : 'empty'}">${w.meaning ? esc(w.meaning) : 'No meaning yet'}</span>
+      </button>
+      ${speakBtn(w.word, 'Pronounce ' + w.word) || '<span></span>'}
+      <button class="icon-btn" data-act="learn" aria-pressed="${w.learned}" aria-label="${w.learned ? 'Learned. Mark as not yet' : 'Not yet. Mark as learned'}"><span class="mark">${ICON.check}</span></button>
+    </div>
+    ${isOpen ? `<div class="entry-body">
+      <div class="entry-field">
+        <span class="label">Example</span>
+        ${w.example
+          ? `<div class="example-row"><p class="example">${esc(w.example)}</p>${speakBtn(w.example, 'Read the example aloud')}</div>`
+          : `<p class="note">—</p>`}
+      </div>
+      <div class="entry-field">
+        <span class="label">My note</span>
+        <p class="note">${w.note ? esc(w.note) : '—'}</p>
+      </div>
+      <div class="entry-actions">
+        <button class="text-btn" data-act="edit">Edit</button>
+        <button class="text-btn danger" data-act="delete">Delete</button>
+      </div>
+    </div>` : ''}
+  </li>`;
+}
+
+/* ================= Form view ================= */
+const POS = ['noun', 'verb', 'adjective', 'adverb', 'phrase', 'idiom', 'preposition', 'conjunction'];
+let editingId = null;
+
+function openForm(id) {
+  editingId = id || null;
+  const w = id ? byId(id) : { word: '', meaning: '', pos: '', example: '', note: '', learned: false };
+  if (!w) return;
+  pushView('form');
+  $('#layer').innerHTML = `<div class="view" id="form-view">
+    <div class="view-top"><div class="wrap">
+      <button class="top-btn" data-act="cancel">Cancel</button>
+      <span class="label">${id ? 'Edit word' : 'New word'}</span>
+      <button class="top-btn right" data-act="save">Save</button>
+    </div></div>
+    <form class="wrap form" id="form" novalidate autocomplete="off">
+      <label class="fld" id="fld-word">
+        <span class="label">English word</span>
+        <input type="text" name="word" class="serif-input" value="${esc(w.word)}" autocapitalize="off" spellcheck="false" enterkeyhint="next">
+        <div class="err" hidden>Enter a word.</div>
+      </label>
+      <label class="fld">
+        <span class="label">Meaning</span>
+        <textarea name="meaning" rows="2">${esc(w.meaning)}</textarea>
+      </label>
+      <div class="fld">
+        <label class="label" for="pos">Part of speech</label>
+        <input type="text" id="pos" name="pos" value="${esc(w.pos)}" autocapitalize="off" placeholder="Type or choose below" enterkeyhint="next">
+        <div class="chips">${POS.map(p =>
+          `<button type="button" class="chip" data-act="pos" data-pos="${p}" aria-pressed="${w.pos === p}">${p}</button>`).join('')}</div>
+      </div>
+      <label class="fld">
+        <span class="label">Example sentence</span>
+        <textarea name="example" rows="2" class="serif-italic" spellcheck="false">${esc(w.example)}</textarea>
+      </label>
+      <label class="fld">
+        <span class="label">My note</span>
+        <textarea name="note" rows="3">${esc(w.note)}</textarea>
+      </label>
+      <button type="button" class="toggle-row" data-act="form-learned" aria-pressed="${w.learned}">
+        <span>Learned</span><span class="mark">${ICON.check}</span>
+      </button>
+      ${id ? `<div class="form-delete"><button type="button" class="text-btn danger" data-act="delete">Delete this word</button></div>` : ''}
+    </form>
+  </div>`;
+  const view = $('#form-view');
+  view.querySelectorAll('textarea').forEach(autosize);
+  view.addEventListener('input', e => {
+    if (e.target.tagName === 'TEXTAREA') autosize(e.target);
+    if (e.target.name === 'pos') syncChips();
+    if (e.target.name === 'word') $('#fld-word').classList.remove('invalid'), $('#fld-word .err').hidden = true;
+  });
+  $('#form').addEventListener('submit', e => { e.preventDefault(); saveForm(); });
+  if (!id) setTimeout(() => { const i = $('#form [name=word]'); if (i) i.focus(); }, 60);
+}
+function autosize(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
+function syncChips() {
+  const v = $('#pos').value.trim().toLowerCase();
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.pos === v)));
+}
+function saveForm() {
+  const f = $('#form');
+  const data = {
+    word: f.word.value.trim(),
+    meaning: f.meaning.value.trim(),
+    pos: f.pos.value.trim(),
+    example: f.example.value.trim(),
+    note: f.note.value.trim(),
+    learned: $('[data-act="form-learned"]').getAttribute('aria-pressed') === 'true'
+  };
+  if (!data.word) {
+    $('#fld-word').classList.add('invalid');
+    $('#fld-word .err').hidden = false;
+    f.word.focus();
+    return;
+  }
+  const now = Date.now();
+  if (editingId) {
+    Object.assign(byId(editingId), data, { updatedAt: now });
+  } else {
+    const w = normalize(Object.assign({ id: uid(), createdAt: now, updatedAt: now }, data));
+    words.push(w);
+    open.clear();
+  }
+  if (!save()) return;
+  const msg = editingId ? 'Saved.' : `Added “${data.word}”.`;
+  closeView();
+  toast(msg);
+}
+
+/* ================= Review view ================= */
+let deck = [], pos = 0, revealed = false, scope = 'notyet';
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function buildDeck() {
+  const src = scope === 'notyet' ? words.filter(w => !w.learned) : words.slice();
+  deck = shuffle(src.map(w => w.id));
+  pos = 0; revealed = false;
+}
+function openReview() {
+  scope = words.some(w => !w.learned) ? 'notyet' : 'all';
+  buildDeck();
+  pushView('review');
+  renderReview();
+}
+function renderReview() {
+  const notyet = words.filter(w => !w.learned).length;
+  const total = deck.length;
+  const finished = pos >= total;
+  const w = finished ? null : byId(deck[pos]);
+  const pct = total ? Math.min(pos + (finished ? 0 : (revealed ? 1 : 0.5)), total) / total * 100 : 0;
+
+  let main, bar;
+  if (!total) {
+    main = `<div class="card wrap done"><h2>Nothing to review.</h2>
+      <p>${scope === 'notyet' ? 'Every word is marked as learned. Switch to All words to go through them again.' : 'Add a few words first.'}</p></div>`;
+    bar = `<button class="btn" data-act="close-review">Close</button>`;
+  } else if (finished) {
+    main = `<div class="card wrap done"><div class="label">Session complete</div>
+      <h2 style="margin-top:14px">That’s all ${plural(total, 'word', 'words')}.</h2>
+      <p>Shuffle again for another round, or close to go back to the list.</p></div>`;
+    bar = `<div class="done-actions" style="margin-top:0"><button class="btn solid" data-act="again">Shuffle again</button>
+      <button class="btn" data-act="close-review">Close</button></div>`;
+  } else {
+    main = `<div class="card wrap">
+      <div class="card-no"><span class="label num">${pad(pos + 1)} / ${pad(total)}</span>
+        <span class="label">${w.learned ? 'Learned' : 'Not yet'}</span></div>
+      <h2 class="card-word">${esc(w.word)}</h2>
+      <div class="card-pos">${esc(w.pos)}</div>
+      ${Speech.ok ? `<div class="card-say">${speakBtn(w.word, 'Pronounce ' + w.word)}</div>` : ''}
+      <div class="card-reveal">
+        ${revealed ? `
+          <div class="label" style="margin-bottom:6px">Meaning</div>
+          <p class="card-meaning">${w.meaning ? esc(w.meaning) : '—'}</p>
+          ${w.example ? `<div class="card-example"><div class="label">Example</div>
+            <div class="example-row"><p class="example">${esc(w.example)}</p>${speakBtn(w.example, 'Read the example aloud')}</div></div>` : ''}
+          ${w.note ? `<div class="card-example"><div class="label">My note</div><p class="note" style="margin-top:6px">${esc(w.note)}</p></div>` : ''}
+        ` : `<p class="card-hint">Say the meaning to yourself, then check.</p>`}
+      </div>
+    </div>`;
+    // back of the card: grading saves the Learned flag and moves on
+    bar = revealed
+      ? `<div class="grade" role="group" aria-label="Mark this word">
+          <button class="btn" data-act="grade" data-v="notyet"><span class="mark"></span>Not yet</button>
+          <button class="btn solid" data-act="grade" data-v="learned"><span class="mark on">${ICON.check}</span>Learned</button>
+        </div>`
+      : `<button class="btn solid" data-act="reveal">Show meaning</button>`;
+  }
+
+  // keep the same container between cards so the entrance animation plays only once
+  let host = $('#review-view');
+  if (!host) {
+    $('#layer').innerHTML = `<div class="view review" id="review-view"></div>`;
+    host = $('#review-view');
+  }
+  host.innerHTML = `
+    <div class="view-top"><div class="wrap">
+      <button class="top-btn" data-act="close-review">Close</button>
+      <span class="label">Review</span>
+      <span></span>
+    </div></div>
+    <div class="wrap">
+      <div class="scope" role="group" aria-label="Words to review">
+        <button class="text-btn" data-act="scope" data-s="notyet" aria-pressed="${scope === 'notyet'}">Not yet &middot; ${notyet}</button>
+        <button class="text-btn" data-act="scope" data-s="all" aria-pressed="${scope === 'all'}">All &middot; ${words.length}</button>
+      </div>
+      <div class="progress"><i style="width:${pct}%"></i></div>
+    </div>
+    ${main}
+    <div class="review-bar"><div class="wrap">${bar}</div></div>`;
+}
+
+/* ================= Views & history ================= */
+let view = 'list';
+function pushView(v) {
+  view = v;
+  const t = $('.toast'); if (t) t.remove(); // a message from the list must not follow into another screen
+  try { history.pushState({ view: v }, ''); } catch (e) {}
+  document.documentElement.style.overflow = 'hidden';
+}
+function closeView() {
+  if (history.state && history.state.view && history.state.view !== 'list') history.back();
+  else teardown();
+}
+function teardown() {
+  view = 'list';
+  editingId = null;
+  if (Speech.ok && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
+  $('#layer').innerHTML = '';
+  document.documentElement.style.overflow = '';
+  renderList();
+}
+window.addEventListener('popstate', () => { if (view !== 'list') teardown(); });
+
+/* ================= Actions ================= */
+async function confirmDelete(id) {
+  const w = byId(id);
+  if (!w) return;
+  const ok = await dialog({
+    label: 'Delete',
+    title: `Delete “${w.word}”?`,
+    body: 'This removes the word and its notes from this device. It cannot be undone.',
+    actions: [{ text: 'Delete', style: 'danger', value: true }, { text: 'Cancel', value: false }]
+  });
+  if (!ok) return;
+  words = words.filter(x => x.id !== id);
+  open.delete(id);
+  save();
+  if (view === 'form') closeView(); else renderList();
+  toast(`Deleted “${w.word}”.`);
+}
+
+function exportJSON() {
+  const payload = { app: 'wordbook', version: 1, exportedAt: new Date().toISOString(), count: words.length, words };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  a.href = url; a.download = `wordbook-${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast(`Exported ${plural(words.length, 'word', 'words')}.`);
+}
+
+async function importFile(file) {
+  let data;
+  try { data = JSON.parse(await file.text()); }
+  catch (e) { return dialog({ label: 'Import', title: 'This file could not be read.', body: 'Choose a JSON file exported from Wordbook.', actions: [{ text: 'OK', style: 'solid', value: null }] }); }
+  const list = Array.isArray(data) ? data : (data && Array.isArray(data.words) ? data.words : null);
+  const incoming = (list || []).map(normalize).filter(Boolean);
+  if (!incoming.length) {
+    return dialog({ label: 'Import', title: 'No words found in this file.', body: 'Choose a JSON file exported from Wordbook.', actions: [{ text: 'OK', style: 'solid', value: null }] });
+  }
+  let mode = 'replace';
+  if (words.length) {
+    mode = await dialog({
+      label: 'Import',
+      title: `Import ${plural(incoming.length, 'word', 'words')}?`,
+      body: `Merge keeps the ${plural(words.length, 'word', 'words')} on this device and adds or updates from the file. Replace discards them and uses the file only.`,
+      actions: [
+        { text: 'Merge', style: 'solid', value: 'merge' },
+        { text: 'Replace', value: 'replace' },
+        { text: 'Cancel', value: null }
+      ]
+    });
+    if (!mode) return;
+  }
+  if (mode === 'merge') {
+    const map = new Map(words.map(w => [w.id, w]));
+    incoming.forEach(w => map.set(w.id, w));
+    words = [...map.values()];
+  } else {
+    words = incoming;
+  }
+  open.clear();
+  save();
+  renderList();
+  toast(`Imported ${plural(incoming.length, 'word', 'words')}.`);
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b || b.disabled) return;
+  const act = b.dataset.act;
+  const li = b.closest('.entry');
+  const id = li ? li.dataset.id : editingId;
+  switch (act) {
+    case 'speak': Speech.speak(b.dataset.text, b); break;
+    case 'filter': filter = b.dataset.f; renderList(); break;
+    case 'clear': query = ''; renderList(); const q = $('#q'); if (q) q.focus(); break;
+    case 'toggle': open.has(id) ? open.delete(id) : open.add(id); renderResults(); break;
+    case 'learn': {
+      const w = byId(id); w.learned = !w.learned; w.updatedAt = Date.now(); save();
+      const y = window.scrollY; renderList(); window.scrollTo(0, y); break;
+    }
+    case 'add': openForm(null); break;
+    case 'edit': openForm(id); break;
+    case 'delete': confirmDelete(id); break;
+    case 'cancel': closeView(); break;
+    case 'save': saveForm(); break;
+    case 'pos': {
+      const input = $('#pos');
+      input.value = b.getAttribute('aria-pressed') === 'true' ? '' : b.dataset.pos;
+      syncChips(); break;
+    }
+    case 'form-learned': b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); break;
+    case 'review': openReview(); break;
+    case 'reveal': revealed = true; renderReview(); break;
+    case 'next': pos++; revealed = false; renderReview(); break;
+    case 'grade': {
+      const w = byId(deck[pos]);
+      if (w) {
+        const v = b.dataset.v === 'learned';
+        if (w.learned !== v) { w.learned = v; w.updatedAt = Date.now(); save(); }
+      }
+      pos++; revealed = false; renderReview(); break;
+    }
+    case 'again': buildDeck(); renderReview(); break;
+    case 'scope': scope = b.dataset.s; buildDeck(); renderReview(); break;
+    case 'close-review': closeView(); break;
+    case 'export': exportJSON(); break;
+    case 'import': $('#file').value = ''; $('#file').click(); break;
+  }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'q') { query = e.target.value; renderResults(); }
+});
+$('#file').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) importFile(f); });
+document.addEventListener('keydown', e => {
+  if (view !== 'review' || e.target.tagName === 'INPUT' || $('.scrim')) return;
+  if (e.key === 'Escape') closeView();
+  if (e.key === ' ' || e.key === 'Enter') {
+    const b = $('[data-act="reveal"]');
+    if (b) { e.preventDefault(); b.click(); }
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const b = $(`[data-act="grade"][data-v="${e.key === 'ArrowRight' ? 'learned' : 'notyet'}"]`);
+    if (b) { e.preventDefault(); b.click(); }
+  }
+});
+window.addEventListener('storage', e => { if (e.key === KEY) { words = load(); if (view === 'list') renderList(); } });
+
+try { history.replaceState({ view: 'list' }, ''); } catch (e) {}
+renderList();
+
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+})();
+</script>
+</body>
+</html>
