@@ -23,18 +23,36 @@
   --ink-3: #8c8578;
   --rule: #d6d0c3;
   --danger: #9b3a26;
-  --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Hiragino Mincho ProN", "Yu Mincho", serif;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui, sans-serif;
   --gutter: 24px;
   --col: 600px;
-  --bar: 76px;
-  --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
+
+  /* ---- tab bar: the five knobs tuned in tabbar-lab.html ---- */
+  --tb-blur: 16px;          /* how much the content behind the bar smears */
+  --tb-tint: 0.8;           /* darkness of the glass (0 = clear, 1 = solid) */
+  --tb-move-ms: 170;        /* travel time of the lens between tabs */
+  --tb-lens-scale: 1.18;    /* how much the pill swells when it lifts into a lens */
+  --tb-rim: 0.24;           /* brightness of the thin light edge */
+  /* secondary knobs */
+  --tb-icon-scale: 1.14;
+  --tb-pill: 0.16;
+  --tb-lift-ms: 110;
+  --tb-hold-ms: 70;
+  --tb-settle-ms: 240;
+
+  /* 60pt tall, 22pt above the bottom edge (reference video 90px/33px at 1.5x) */
+  --bar-h: 60px;
+  --bar-bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) - 12px));
+  --bar-side: 5.6vw;
+  --bar-space: calc(var(--bar-h) + var(--bar-bottom) + 28px);
 }
 * { box-sizing: border-box; }
+html, body { height: 100%; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
+  overflow: hidden;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
@@ -42,6 +60,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  font-feature-settings: "palt" 0;
 }
 /* paper grain: a faint noise laid over everything */
 body::after {
@@ -59,34 +78,82 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
 [hidden] { display: none !important; }
 
 .label {
-  font-family: var(--sans);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: .14em;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--ink-3);
   line-height: 1.4;
 }
-.num { font-variant-numeric: lining-nums tabular-nums; }
-
+.num { font-variant-numeric: tabular-nums; }
 .wrap {
   max-width: calc(var(--col) + var(--gutter) * 2);
   margin: 0 auto;
   padding: 0 var(--gutter);
 }
 
-/* ---------- Masthead ---------- */
-.mast { padding-top: calc(var(--safe-t) + 28px); }
-.mast-top { display: flex; justify-content: space-between; align-items: baseline; }
-.title {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 44px;
-  line-height: 1.05;
-  letter-spacing: -.01em;
-  margin: 20px 0 24px;
+/* ---------- Screens: each one scrolls on its own and runs under the bar ---------- */
+.screen {
+  position: fixed; inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background: var(--paper);
+  padding-bottom: var(--bar-space);
 }
-/* stats double as the filter: a title-block of three cells */
+.top {
+  padding-top: calc(var(--safe-t) + 6px);
+}
+.top .wrap { display: flex; align-items: center; justify-content: space-between; min-height: 52px; }
+.home-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: 44px; margin-left: -6px; padding: 0 6px;
+  color: var(--ink-2); font-size: 15px; font-weight: 500;
+}
+.screen-title {
+  font-size: 34px; font-weight: 700; letter-spacing: -.022em; line-height: 1.1;
+  margin: 6px 0 22px;
+}
+
+/* ---------- Home ---------- */
+.home { display: flex; flex-direction: column; min-height: 100%; }
+.home-top { display: flex; justify-content: space-between; align-items: baseline; padding-top: calc(var(--safe-t) + 22px); }
+.home-center { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 24px 0 8px; }
+.streak { text-align: center; }
+.streak-n {
+  display: block;
+  font-size: 88px; font-weight: 700; letter-spacing: -.045em; line-height: 1;
+}
+.streak .label { display: block; margin-top: 10px; color: var(--ink-2); }
+.streak-sub { margin: 10px auto 0; color: var(--ink-3); font-size: 14px; max-width: 22em; }
+.cal { margin: 34px auto 0; width: 100%; max-width: 360px; border-top: 1.5px solid var(--ink); }
+.cal-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 6px; }
+.cal-title { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+.cal-nav { display: flex; align-items: center; }
+.cal-nav .icon-btn { width: 40px; height: 40px; }
+.cal-today { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); min-height: 40px; padding: 0 8px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 2px; }
+.cal-wd { text-align: center; font-size: 11px; font-weight: 600; color: var(--ink-3); letter-spacing: .06em; padding: 6px 0 8px; border-bottom: 1px solid var(--rule); margin-bottom: 6px; }
+.day {
+  position: relative;
+  height: 42px;
+  display: grid; place-items: center;
+  font-size: 14px; font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.day i {
+  position: absolute; width: 34px; height: 34px; border-radius: 50%;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+}
+.day span { position: relative; }
+.day.future { color: var(--ink-3); }
+.day.done i { background: var(--ink); }
+.day.done span { color: var(--paper); font-weight: 600; }
+.day.today i { box-shadow: 0 0 0 1.5px var(--ink); }
+.day.today.done i { box-shadow: 0 0 0 1.5px var(--paper), 0 0 0 3px var(--ink); }
+.day.today span { font-weight: 700; }
+
+/* ---------- List ---------- */
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -97,106 +164,37 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
   position: relative;
   text-align: left;
   padding: 12px 12px 12px 0;
-  min-height: 76px;
+  min-height: 74px;
   display: flex; flex-direction: column; justify-content: space-between;
 }
 .stat + .stat { padding-left: 14px; border-left: 1px solid var(--rule); }
-.stat .n {
-  font-family: var(--serif);
-  font-size: 30px;
-  line-height: 1;
-  color: var(--ink-3);
-  transition: color .15s;
-}
+.stat .n { font-size: 28px; font-weight: 600; letter-spacing: -.02em; line-height: 1; color: var(--ink-3); transition: color .15s; }
 .stat .label { margin-top: 10px; }
-.stat[aria-pressed="true"] .n { color: var(--ink); }
-.stat[aria-pressed="true"] .label { color: var(--ink); }
-.stat[aria-pressed="true"]::before {
-  content: ""; position: absolute; left: 0; right: 0; top: -1.5px; height: 4px; background: var(--ink);
-}
+.stat[aria-pressed="true"] .n, .stat[aria-pressed="true"] .label { color: var(--ink); }
+.stat[aria-pressed="true"]::before { content: ""; position: absolute; left: 0; right: 0; top: -1.5px; height: 4px; background: var(--ink); }
 .stat + .stat[aria-pressed="true"]::before { left: -1px; }
 
-/* ---------- Search ---------- */
-.search {
-  position: sticky; top: 0; z-index: 5;
-  background: var(--paper);
-  padding: 18px 0 0;
-}
-.search-row {
-  display: flex; align-items: center; gap: 10px;
-  border-bottom: 1px solid var(--ink);
-}
+.search { position: sticky; top: 0; z-index: 5; background: var(--paper); padding: 16px 0 0; }
+.search-row { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--ink); }
 .search-row svg { flex: none; color: var(--ink-3); }
-.search input {
-  flex: 1; min-width: 0;
-  border: 0; background: transparent;
-  font-size: 16px;
-  padding: 12px 0;
-  outline: none;
-}
+.search input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 16px; padding: 12px 0; outline: none; }
 .search input::placeholder { color: var(--ink-3); }
 .search input::-webkit-search-cancel-button { -webkit-appearance: none; }
 .clear-btn { width: 44px; height: 44px; margin-right: -12px; color: var(--ink-3); display: grid; place-items: center; }
+.list-head { display: flex; justify-content: space-between; align-items: baseline; padding: 26px 0 10px; border-bottom: 1px solid var(--rule); }
 
-.list-head {
-  display: flex; justify-content: space-between; align-items: baseline;
-  padding: 28px 0 10px;
-  border-bottom: 1px solid var(--rule);
-}
-
-/* ---------- Entries ---------- */
 .entries { list-style: none; margin: 0; padding: 0; }
 .entry { border-bottom: 1px solid var(--rule); }
-.entry-head {
-  display: grid;
-  grid-template-columns: 1fr 44px 44px;
-  align-items: start;
-  column-gap: 2px;
-}
-.entry-main {
-  display: grid;
-  grid-template-columns: 34px 1fr;
-  text-align: left;
-  padding: 18px 0 18px;
-  min-height: 72px;
-}
-.entry-no {
-  font-size: 11px;
-  color: var(--ink-3);
-  padding-top: 9px;
-  letter-spacing: .04em;
-}
-.entry-word {
-  font-family: var(--serif);
-  font-size: 23px;
-  line-height: 1.25;
-  word-break: break-word;
-}
-.entry-pos {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 15px;
-  color: var(--ink-3);
-  margin-left: 8px;
-  white-space: nowrap;
-}
-.entry-meaning {
-  grid-column: 2;
-  margin-top: 4px;
-  color: var(--ink-2);
-  font-size: 15px;
-  line-height: 1.55;
-  word-break: break-word;
-}
-.entry-meaning.empty { color: var(--ink-3); font-style: italic; }
-.entry-head > .icon-btn { margin-top: 14px; }
+.entry-head { display: grid; grid-template-columns: 1fr 44px 44px; align-items: start; column-gap: 2px; }
+.entry-main { display: grid; grid-template-columns: 34px 1fr; text-align: left; padding: 16px 0; min-height: 70px; }
+.entry-no { font-size: 11px; color: var(--ink-3); padding-top: 7px; letter-spacing: .04em; }
+.entry-word { font-size: 20px; font-weight: 600; letter-spacing: -.012em; line-height: 1.3; word-break: break-word; }
+.entry-pos { font-size: 12px; font-weight: 500; letter-spacing: .02em; color: var(--ink-3); margin-left: 8px; white-space: nowrap; }
+.entry-meaning { grid-column: 2; margin-top: 3px; color: var(--ink-2); font-size: 15px; line-height: 1.6; word-break: break-word; }
+.entry-meaning.empty { color: var(--ink-3); }
+.entry-head > .icon-btn { margin-top: 12px; }
 
-.icon-btn {
-  width: 44px; height: 44px;
-  display: grid; place-items: center;
-  color: var(--ink-2);
-  border-radius: 50%;
-}
+.icon-btn { width: 44px; height: 44px; display: grid; place-items: center; color: var(--ink-2); border-radius: 50%; }
 .icon-btn:active { background: var(--paper-deep); }
 .icon-btn.speaking { color: var(--ink); }
 .icon-btn.speaking svg .wave { animation: pulse .9s ease-in-out infinite; }
@@ -213,221 +211,227 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
 [aria-pressed="true"] > .mark, .mark.on { background: var(--ink); border-color: var(--ink); }
 [aria-pressed="true"] > .mark svg, .mark.on svg { opacity: 1; }
 
-.entry-body {
-  padding: 0 0 22px 34px;
-}
+.entry-body { padding: 0 0 22px 34px; }
 .entry-field { padding: 14px 0 0; }
 .entry-field + .entry-field { border-top: 1px dashed var(--rule); margin-top: 14px; }
-.entry-field .label { display: block; margin-bottom: 4px; }
+.entry-field .label { display: block; margin-bottom: 6px; }
 .example-row { display: grid; grid-template-columns: 1fr 44px; align-items: start; gap: 4px; }
-.example {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 17px;
-  line-height: 1.55;
-  margin: 0;
-  padding-top: 8px;
-}
-.example-row .icon-btn { margin-right: -2px; }
+/* example sentence: set off with a thin rule instead of italics (the sans has no true italic for Japanese) */
+.example { font-size: 16px; line-height: 1.6; margin: 0; padding: 2px 0 2px 12px; border-left: 2px solid var(--rule); }
+.example-row .icon-btn { margin-top: -8px; }
 .note { margin: 0; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; }
 .entry-actions { display: flex; gap: 28px; margin-top: 18px; }
 .text-btn {
   min-height: 44px;
-  font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   color: var(--ink);
   text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px;
 }
 .text-btn.danger { color: var(--danger); }
 .text-btn:disabled { opacity: .35; cursor: default; }
 
-/* ---------- Empty ---------- */
-.empty-state { padding: 64px 0 40px; }
-.empty-state h2 {
-  font-family: var(--serif); font-weight: 400; font-style: italic;
-  font-size: 28px; line-height: 1.25; margin: 0 0 12px;
-}
+.empty-state { padding: 56px 0 32px; }
+.empty-state h2 { font-size: 22px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; margin: 0 0 8px; }
 .empty-state p { margin: 0; color: var(--ink-2); max-width: 30em; }
 
-/* ---------- Data / footer ---------- */
-.data {
-  margin-top: 72px;
-  border-top: 1.5px solid var(--ink);
-  padding: 14px 0 0;
-}
+.data { margin-top: 64px; border-top: 1.5px solid var(--ink); padding: 14px 0 0; }
 .data p { color: var(--ink-2); margin: 10px 0 8px; max-width: 32em; font-size: 14px; }
 .data-actions { display: flex; gap: 28px; }
-.colophon { padding: 48px 0 calc(var(--bar) + var(--safe-b) + 32px); color: var(--ink-3); }
+.colophon { padding: 40px 0 12px; }
+.sources { margin-top: 40px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.sources ul { list-style: none; margin: 8px 0 0; padding: 0; }
+.sources li { font-size: 12px; line-height: 1.6; color: var(--ink-3); margin-bottom: 4px; }
+.sources a, .src-line { color: var(--ink-3); }
+.sources a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.src-line { font-size: 11px; margin: 14px 0 0; letter-spacing: .02em; }
+.status-actions { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 2px; }
 
-/* ---------- Bottom bar ---------- */
-.bar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-  background: var(--paper);
-  border-top: 1px solid var(--rule);
-  padding: 12px 0 calc(12px + var(--safe-b));
-}
-.bar .wrap { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; }
+/* ---------- Buttons ---------- */
 .btn {
   height: 52px;
   display: flex; align-items: center; justify-content: center; gap: 10px;
   border: 1px solid var(--ink);
-  font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  background: var(--paper);
+  font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   transition: background .12s, color .12s;
 }
 .btn:active { background: var(--paper-deep); }
 .btn.solid { background: var(--ink); color: var(--paper); }
 .btn.solid:active { background: #3a3631; }
 .btn:disabled { opacity: .35; cursor: default; }
-.btn .count { font-weight: 400; letter-spacing: .04em; opacity: .7; }
 
-/* ---------- Full-screen views (form, review) ---------- */
+/* ---------- Add ---------- */
+.add-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+.add-row input {
+  width: 100%; min-width: 0;
+  border: 0; border-bottom: 1.5px solid var(--ink); border-radius: 0;
+  background: transparent; outline: none;
+  font-size: 26px; font-weight: 600; letter-spacing: -.015em;
+  padding: 8px 0 10px;
+}
+.add-row input::placeholder { color: var(--ink-3); font-weight: 500; font-size: 22px; letter-spacing: -.005em; }
+.add-row .btn { width: 92px; }
+.hint { color: var(--ink-3); font-size: 13px; margin: 12px 0 0; }
+.add-err { color: var(--danger); font-size: 13px; margin: 8px 0 0; }
+.added { margin-top: 40px; border-top: 1.5px solid var(--ink); padding-top: 12px; }
+.added-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.status { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; }
+.status.busy::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); margin-right: 8px; animation: pulse 1s ease-in-out infinite; }
+
+/* ---------- Forms (shared by Add details and Edit) ---------- */
+.fld { display: block; padding: 20px 0 0; }
+.fld .label { display: flex; justify-content: space-between; }
+.fld input[type=text], .fld textarea {
+  display: block; width: 100%;
+  border: 0; border-bottom: 1px solid var(--rule);
+  background: transparent;
+  padding: 9px 0 10px;
+  font-size: 16px; line-height: 1.55;
+  border-radius: 0; outline: none; resize: none;
+  transition: border-color .15s;
+}
+.fld input[type=text]:focus, .fld textarea:focus { border-bottom-color: var(--ink); }
+.fld input.big { font-size: 24px; font-weight: 600; letter-spacing: -.015em; line-height: 1.3; }
+.fld.invalid input { border-bottom-color: var(--danger); }
+.err { color: var(--danger); font-size: 13px; margin-top: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip {
+  min-height: 36px; padding: 0 14px;
+  border: 1px solid var(--rule); border-radius: 18px;
+  font-size: 14px; font-weight: 500; color: var(--ink-2);
+}
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; min-height: 60px; margin-top: 26px;
+  border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--rule);
+  font-size: 16px; text-align: left;
+}
+.toggle-row .mark { width: 24px; height: 24px; }
+.form-delete { margin-top: 36px; }
+
+/* full-screen overlay (Edit) sits above the tab bar */
 .view {
-  position: fixed; inset: 0; z-index: 20;
+  position: fixed; inset: 0; z-index: 40;
   background: var(--paper);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   animation: rise .18s ease-out;
 }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
-.view-top {
-  position: sticky; top: 0; z-index: 2;
-  background: var(--paper);
-  padding-top: var(--safe-t);
-  border-bottom: 1px solid var(--rule);
-}
-.view-top .wrap {
-  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
-  min-height: 56px;
-}
-/* letter-spacing leaves a trailing gap after the last letter; indent by the same amount so the word sits on the true center */
-.view-top .label { text-align: center; color: var(--ink); padding-left: .14em; }
-.top-btn {
-  min-height: 44px; padding: 0 2px;
-  font-size: 15px; color: var(--ink-2);
-  justify-self: start;
-}
+.view-top { position: sticky; top: 0; z-index: 2; background: var(--paper); padding-top: var(--safe-t); border-bottom: 1px solid var(--rule); }
+.view-top .wrap { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 56px; }
+.view-top .label { text-align: center; color: var(--ink); padding-left: .12em; }
+.top-btn { min-height: 44px; padding: 0 2px; font-size: 15px; color: var(--ink-2); justify-self: start; }
 .top-btn.right { justify-self: end; color: var(--ink); font-weight: 600; }
+.form { padding-top: 8px; padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
 
-/* form */
-.form { padding-top: 12px; padding-bottom: calc(48px + var(--safe-b)); }
-.fld { display: block; padding: 22px 0 0; }
-.fld .label { display: flex; justify-content: space-between; }
-.fld input[type=text], .fld textarea {
-  display: block; width: 100%;
-  border: 0; border-bottom: 1px solid var(--rule);
-  background: transparent;
-  padding: 10px 0 10px;
-  font-size: 16px;
-  line-height: 1.55;
-  border-radius: 0;
-  outline: none;
-  resize: none;
-  transition: border-color .15s;
-}
-.fld input[type=text]:focus, .fld textarea:focus { border-bottom-color: var(--ink); }
-.fld input.serif-input { font-family: var(--serif); font-size: 28px; line-height: 1.3; padding-top: 6px; }
-.fld textarea.serif-italic { font-family: var(--serif); font-style: italic; font-size: 18px; }
-.fld.invalid input { border-bottom-color: var(--danger); }
-.err { color: var(--danger); font-size: 13px; margin-top: 6px; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.chip {
-  min-height: 36px; padding: 0 14px;
-  border: 1px solid var(--rule);
-  border-radius: 18px;
-  font-family: var(--serif); font-style: italic; font-size: 15px;
-  color: var(--ink-2);
-}
-.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-.toggle-row {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%;
-  min-height: 60px;
-  margin-top: 26px;
-  border-top: 1.5px solid var(--ink);
-  border-bottom: 1px solid var(--rule);
-  font-size: 16px;
-  text-align: left;
-}
-.toggle-row .mark { width: 24px; height: 24px; }
-.form-delete { margin-top: 36px; }
-
-/* review */
-.review { display: flex; flex-direction: column; min-height: 100%; }
-.review .view-top { position: static; }
-.review > .wrap, .review > .review-bar { width: 100%; }
-.card-say .icon-btn { width: 52px; height: 52px; border: 1px solid var(--rule); }
-.scope { display: flex; gap: 24px; padding-top: 6px; }
+/* ---------- Review ---------- */
+.scope { display: flex; gap: 24px; }
 .scope .text-btn { color: var(--ink-3); text-decoration-color: transparent; }
 .scope .text-btn[aria-pressed="true"] { color: var(--ink); text-decoration-color: var(--ink); }
 .progress { height: 1px; background: var(--rule); margin-top: 4px; position: relative; }
 .progress i { position: absolute; left: 0; top: -1px; height: 3px; background: var(--ink); transition: width .25s ease; }
-/* the card hangs from the top, a fixed measure below the progress rule */
-.card {
-  flex: 1;
-  display: flex; flex-direction: column; justify-content: flex-start;
-  padding-top: clamp(40px, 7vh, 72px); padding-bottom: 32px;
-  width: 100%;
+.card { padding-top: 40px; padding-bottom: calc(52px + 24px); }
+.card-no { display: flex; justify-content: space-between; }
+.card-word { font-size: 44px; font-weight: 700; line-height: 1.1; letter-spacing: -.028em; margin: 16px 0 8px; word-break: break-word; }
+.card-pos { color: var(--ink-3); font-size: 15px; font-weight: 500; min-height: 1em; }
+.card-say { margin: 18px 0 0; }
+.card-say .icon-btn { width: 52px; height: 52px; border: 1px solid var(--rule); }
+.card-reveal { margin-top: 28px; border-top: 1px solid var(--rule); padding-top: 20px; }
+.card-meaning { font-size: 20px; font-weight: 500; line-height: 1.55; margin: 0; word-break: break-word; }
+/* several dictionary senses ("a / b / c") are set one per line */
+.card-senses { list-style: none; margin: 0; padding: 0; }
+.card-senses li { font-size: 18px; font-weight: 500; line-height: 1.5; padding: 6px 0; word-break: break-word; }
+.card-senses li + li { border-top: 1px dashed var(--rule); }
+.sources a[href*="creativecommons"] { white-space: nowrap; }
+.card-example { margin-top: 22px; }
+.card-example .label { margin-bottom: 6px; }
+.card-hint { color: var(--ink-3); font-size: 15px; margin: 0; }
+.review-actions {
+  position: fixed; left: 0; right: 0; z-index: 6;
+  bottom: calc(var(--bar-bottom) + var(--bar-h) + 14px);
 }
+.review-actions .btn { width: 100%; }
 .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .grade .mark { width: 16px; height: 16px; }
 .grade .btn:not(.solid) .mark { border-color: var(--ink-3); }
 .grade .btn.solid .mark.on { background: var(--paper); border-color: var(--paper); color: var(--ink); }
-.card-no { display: flex; justify-content: space-between; }
-.card-word {
-  font-family: var(--serif); font-weight: 400;
-  font-size: 46px; line-height: 1.12; letter-spacing: -.01em;
-  margin: 18px 0 6px;
-  word-break: break-word;
-}
-.card-pos { font-family: var(--serif); font-style: italic; color: var(--ink-3); font-size: 17px; min-height: 1em; }
-.card-say { margin: 20px 0 0; }
-.card-reveal { margin-top: 32px; border-top: 1px solid var(--rule); padding-top: 22px; }
-.card-meaning { font-size: 20px; line-height: 1.55; margin: 0; word-break: break-word; }
-.card-example { margin-top: 22px; }
-.card-hint { color: var(--ink-3); font-family: var(--serif); font-style: italic; font-size: 17px; margin: 0; }
-.review-bar { padding: 12px 0 calc(16px + var(--safe-b)); border-top: 1px solid var(--rule); }
-.review-bar .btn { width: 100%; }
-.done h2 { font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 1.15; margin: 0 0 12px; }
+.done h2 { font-size: 32px; font-weight: 700; letter-spacing: -.025em; line-height: 1.15; margin: 14px 0 10px; }
 .done p { color: var(--ink-2); margin: 0; }
-.done-actions { display: grid; gap: 12px; margin-top: 36px; }
+.done-actions { display: grid; gap: 12px; margin-top: 28px; }
 
-/* ---------- Dialog ---------- */
+/* ---------- Tab bar ---------- */
+.tabbar {
+  position: fixed; z-index: 30;
+  left: var(--bar-side); right: var(--bar-side);
+  bottom: var(--bar-bottom);
+  max-width: 420px; margin: 0 auto;
+  height: var(--bar-h);
+  border-radius: 999px;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  padding: 0 4px;
+}
+.tb-glass {
+  position: absolute; inset: 0; border-radius: inherit;
+  background: rgba(24, 23, 21, var(--tb-tint));
+  -webkit-backdrop-filter: blur(var(--tb-blur)) saturate(170%);
+  backdrop-filter: blur(var(--tb-blur)) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, var(--tb-rim));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, calc(var(--tb-rim) * .7)), 0 10px 30px rgba(29, 27, 24, .16);
+}
+.tb-pill {
+  position: absolute; left: 0; top: 4px; bottom: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, var(--tb-pill));
+  border: 1px solid transparent;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.tb-pill.lens {
+  -webkit-backdrop-filter: brightness(1.28) saturate(1.3);
+  backdrop-filter: brightness(1.28) saturate(1.3);
+}
+.tab {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  color: rgba(255, 255, 255, .74);
+  transition: color .18s;
+}
+.tab.selected { color: #fff; }
+.tab-icon { display: block; width: 26px; height: 26px; will-change: transform; }
+.tab-icon svg { display: block; }
+.tab-label { font-size: 10.5px; font-weight: 600; letter-spacing: .01em; line-height: 1.2; }
+
+/* ---------- Dialog / toast ---------- */
 .scrim {
   position: fixed; inset: 0; z-index: 50;
   background: rgba(29, 27, 24, .28);
   display: flex; align-items: flex-end; justify-content: center;
-  padding: 16px 16px calc(16px + var(--safe-b));
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   animation: fade .15s ease-out;
 }
 @keyframes fade { from { opacity: 0; } }
-.dialog {
-  width: 100%; max-width: 440px;
-  background: var(--paper);
-  border-top: 1.5px solid var(--ink);
-  padding: 22px 22px 18px;
-  box-shadow: 0 1px 0 var(--rule);
-}
-.dialog h3 { font-family: var(--serif); font-weight: 400; font-size: 24px; line-height: 1.3; margin: 8px 0 8px; word-break: break-word; }
+.dialog { width: 100%; max-width: 440px; background: var(--paper); border-top: 1.5px solid var(--ink); padding: 22px 22px 18px; }
+.dialog h3 { font-size: 21px; font-weight: 700; letter-spacing: -.015em; line-height: 1.3; margin: 8px 0 8px; word-break: break-word; }
 .dialog p { margin: 0; color: var(--ink-2); }
 .dialog-actions { display: grid; gap: 10px; margin-top: 24px; }
 .btn.danger { background: var(--danger); border-color: var(--danger); color: #fbf7f2; }
-
-/* ---------- Toast ---------- */
 .toast {
   position: fixed; left: 50%; z-index: 60;
-  bottom: calc(var(--bar) + var(--safe-b) + 16px);
+  bottom: calc(var(--bar-bottom) + var(--bar-h) + 14px);
   transform: translateX(-50%);
   background: var(--ink); color: var(--paper);
-  padding: 10px 16px;
-  font-size: 14px;
+  padding: 10px 16px; font-size: 14px;
   max-width: calc(100% - 48px);
   animation: fade .15s ease-out;
 }
 
 @media (min-width: 760px) {
-  :root { --gutter: 48px; }
-  .mast { padding-top: 64px; }
-  .title { font-size: 56px; }
-  .card-word { font-size: 60px; }
+  :root { --gutter: 48px; --bar-side: 24px; }
+  .home-top { padding-top: 48px; }
+  .card-word { font-size: 56px; }
   .scrim { align-items: center; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -437,44 +441,492 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
 </head>
 <body>
 
-<main id="app"></main>
+<main id="screens">
+  <section class="screen" id="s-home" data-screen="home" aria-label="Home"></section>
+  <section class="screen" id="s-review" data-screen="review" aria-label="Review" hidden></section>
+  <section class="screen" id="s-add" data-screen="add" aria-label="Add" hidden></section>
+  <section class="screen" id="s-list" data-screen="list" aria-label="List" hidden></section>
+</main>
+
+<nav class="tabbar" id="tabbar" aria-label="Main">
+  <div class="tb-glass"></div>
+  <div class="tb-pill" id="pill"></div>
+  <button class="tab" data-tab="review" aria-label="Review">
+    <span class="tab-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="8" y="2.6" width="12.6" height="15.4" rx="2.6" opacity=".45"/><rect x="3.4" y="6" width="12.6" height="15.4" rx="2.6"/></svg></span>
+    <span class="tab-label">Review</span>
+  </button>
+  <button class="tab" data-tab="add" aria-label="Add">
+    <span class="tab-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20a10 10 0 0 1 0-20Zm-1.05 5.4v3.55H7.4v2.1h3.55v3.55h2.1v-3.55h3.55v-2.1h-3.55V7.4h-2.1Z"/></svg></span>
+    <span class="tab-label">Add</span>
+  </button>
+  <button class="tab" data-tab="list" aria-label="List">
+    <span class="tab-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="4.6" cy="6" r="1.9"/><rect x="8.2" y="4.5" width="13" height="3" rx="1.5"/><circle cx="4.6" cy="12" r="1.9"/><rect x="8.2" y="10.5" width="13" height="3" rx="1.5"/><circle cx="4.6" cy="18" r="1.9"/><rect x="8.2" y="16.5" width="13" height="3" rx="1.5"/></svg></span>
+    <span class="tab-label">List</span>
+  </button>
+</nav>
+
 <div id="layer"></div>
 <input type="file" id="file" accept="application/json,.json" hidden>
 
 <script>
+/* ===== lookup.js (inlined from 05_CNote_開発/成果物/lookup_2026-09-30/lookup.js; only the comment on line 4 was escaped) ===== */
+/*
+ * lookup.js — 英単語 → { meaning(日本語), pos, example(英語1文), source, partial }
+ * 単一ファイル・依存なし・APIキーなし。<script> に貼り付けても、Node(>=18) の require でも動く。
+ *   <script src="lookup.js"><\/script>  →  window.lookupWord(word, opts?)
+ *
+ * 取得元（すべてブラウザからのCORS fetchで実測済み。詳細は 結果メモ.md）
+ *   POS・例文   : en.wiktionary.org  REST  /api/rest_v1/page/definition/{word}
+ *   日本語の意味: ja.wiktionary.org  action=query&prop=extracts（「英語」節の語釈）
+ *   意味の代替  : api.mymemory.translated.net（機械翻訳。ja.wiktionaryに項目が無い語のみ）
+ *   例文の代替  : api.tatoeba.org/unstable/sentences（en.wiktionaryに例文が無い語のみ）
+ *
+ * 成功時: { meaning, pos, example, source:{meaning,pos,example}, partial, word, lemma? }
+ *   取れなかった項目は null。1つでも null なら partial:true。
+ * 失敗時: Error を throw。err.kind は次のいずれか
+ *   'invalid_input' | 'offline' | 'not_found' | 'rate_limit' | 'unavailable'
+ *   （err.detail に各取得元ごとの結果が入る。デバッグ用）
+ */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.lookupWord = api.lookupWord;
+  root.lookupWord.normalizeWord = api.normalizeWord;
+}(typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this), function (root) {
+  'use strict';
+
+  var DEFAULT_TIMEOUT_MS = 8000;
+  var JA_RE = /[\u3040-\u30ff\u4e00-\u9fff]/;
+
+  // ---------- エラー ----------
+  function LookupError(kind, message, detail) {
+    var e = new Error(message);
+    e.name = 'LookupError';
+    e.kind = kind;
+    if (detail) e.detail = detail;
+    return e;
+  }
+
+  // ---------- 入力の正規化 ----------
+  // 前後空白・前後の記号を削除 / NFKC(全角→半角) / 小文字化 / ’→' / 空白を1つに。
+  // 許可: 英字・アポストロフィ・ハイフン・語間の空白（最大4語・60字）。それ以外(数字・内部の記号・非英字)は invalid_input。
+  function normalizeWord(input) {
+    var s = String(input == null ? '' : input).normalize('NFKC').toLowerCase();
+    s = s.replace(/[\u2018\u2019\u02bc`\u00b4]/g, "'").replace(/\s+/g, ' ').trim();
+    s = s.replace(/^[^a-z]+|[^a-z]+$/g, '');
+    if (!s) throw LookupError('invalid_input', '英単語を入力してください');
+    if (/[^a-z' -]/.test(s)) throw LookupError('invalid_input', '使えない文字が含まれています: ' + s);
+    s = s.replace(/\s*-\s*/g, '-').replace(/-{2,}/g, '-');
+    if (s.split(' ').length > 4 || s.length > 60) throw LookupError('invalid_input', '長すぎます（4語・60字まで）');
+    return s;
+  }
+
+  // ---------- fetch ----------
+  function isOffline() {
+    return typeof navigator !== 'undefined' && navigator.onLine === false;
+  }
+
+  // 戻り値: {ok:true,data} | {ok:false,kind,status?,cause?}
+  // 注意: CORSヘッダの無い 429/5xx(例: Cloudflare 522) はブラウザ上では TypeError になり、
+  //       通信断と区別できない → 'unavailable' として扱う（offline は navigator.onLine===false の時だけ）。
+  function getJSON(url, timeoutMs) {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, timeoutMs) : null;
+    return fetch(url, ctrl ? { signal: ctrl.signal } : {}).then(function (r) {
+      if (r.status === 404) return { ok: false, kind: 'not_found', status: 404 };
+      if (r.status === 429) return { ok: false, kind: 'rate_limit', status: 429 };
+      if (!r.ok) return { ok: false, kind: 'unavailable', status: r.status };
+      return r.json().then(function (data) { return { ok: true, data: data }; },
+        function () { return { ok: false, kind: 'unavailable', cause: 'bad_json' }; });
+    }, function (e) {
+      return { ok: false, kind: isOffline() ? 'offline' : 'unavailable', cause: e && e.name === 'AbortError' ? 'timeout' : 'network' };
+    }).then(function (res) { if (timer) clearTimeout(timer); return res; });
+  }
+
+  // ---------- 小物 ----------
+  function decodeEntities(s) {
+    return s.replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0*39;|&apos;/g, "'")
+      .replace(/&#(\d+);/g, function (m, n) { return String.fromCharCode(+n); })
+      .replace(/&#x([0-9a-f]+);/gi, function (m, n) { return String.fromCharCode(parseInt(n, 16)); })
+      .replace(/&amp;/g, '&');
+  }
+  function stripHtml(s) { return decodeEntities(String(s).replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim(); }
+  function wordCount(s) { return s.split(/\s+/).filter(Boolean).length; }
+  function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  // 語形変化を含めて本文中に単語が現れるか判定する正規表現（Tatoeba用）
+  function formRegex(word) {
+    var forms = [word];
+    var last = word.charAt(word.length - 1);
+    ['s', 'es', 'ed', 'd', 'ing', 'ly', 'ness'].forEach(function (x) { forms.push(word + x); });
+    if (last === 'e') forms.push(word.slice(0, -1) + 'ing');
+    if (last === 'y') { forms.push(word.slice(0, -1) + 'ies'); forms.push(word.slice(0, -1) + 'ied'); }
+    if (/[^aeiou][aeiou][^aeiouwxy]$/.test(word)) { forms.push(word + last + 'ed'); forms.push(word + last + 'ing'); }
+    return new RegExp('(^|[^a-z])(' + forms.map(escRe).join('|') + ')(?![a-z])', 'i');
+  }
+
+  // ---------- en.wiktionary（POS・例文） ----------
+  var SKIP_POS = /^(symbol|letter|punctuation mark|number|numeral symbol|diacritical mark|character)$/i;
+  var FORM_OF = /^(?:(?:the\s+)?(?:(?:simple|present|past|third-person|singular|plural|indicative|subjunctive|imperative|gerund|comparative|superlative|participle|tense|form|and|or)[\s,-]+)+(?:of|form of)|(?:alternative|obsolete|archaic|dated|nonstandard|misspelling|eye dialect|informal|rare|superseded)\b[^.]{0,40}(?:form|spelling|variant|misspelling) of)\s/i;
+
+  function parseEn(data) {
+    var out = [];
+    var list = data && data.en;
+    if (!list || !list.length) return out;
+    list.forEach(function (e) {
+      var pos = String(e.partOfSpeech || '').toLowerCase();
+      if (!pos || SKIP_POS.test(pos)) return;
+      var defs = (e.definitions || []).map(function (d) {
+        return { text: stripHtml(d.definition || ''), examples: d.examples || [] };
+      }).filter(function (d) { return d.text; });
+      if (!defs.length) return;
+      var real = defs.filter(function (d) { return !FORM_OF.test(d.text); });
+      out.push({ pos: pos, defs: defs, isFormOf: real.length === 0, real: real });
+    });
+    return out;
+  }
+
+  // 辞書の先頭項目が「past participle of run」のような活用形なら原形を返す（ran→run, running→run）。
+  // 先頭が本来の語義なら null（mitigated は形容詞の語義が先頭なのでそのまま引く）
+  function lemmaOf(entries) {
+    if (!entries.length || !entries[0].isFormOf) return null;
+    var m = entries[0].defs[0].text.match(/\b(?:of|form of)\s+([a-z][a-z'-]*(?: [a-z][a-z'-]*)?)\s*(?:[.;:,]|$)/i);
+    return m ? m[1].toLowerCase() : null;
+  }
+
+  // en.wiktionary の例文候補（HTML付き原文）から「文らしい」もの1つ
+  function pickEnExample(entries, pos) {
+    // 同じ品詞の項目だけを見る（他品詞の例文は意味と食い違うので使わない）。同じ品詞の項目が無い時だけ他品詞も見る
+    var same = entries.filter(function (e) { return e.pos === pos && !e.isFormOf; });
+    var pool = same.length ? same : entries.filter(function (e) { return !e.isFormOf; });
+    var best = null, order = 0;
+    pool.forEach(function (ent) {
+      ent.real.forEach(function (d) {
+        d.examples.forEach(function (raw) {
+          var t = stripHtml(raw);
+          var n = wordCount(t);
+          order++;
+          // 1文であること: 大文字始まり・句読点終わり・4〜20語・途中に文の切れ目が無い・<b>で対象語が示されている
+          if (!(/<b>/i.test(raw) && /^["'“‘]?[A-Z]/.test(t) && /[.!?…]["'”’]?$/.test(t) && n >= 4 && n <= 20 &&
+                t.indexOf('[') < 0 && !/[.!?]["'”’]?\s+["'“‘]?[A-Z]/.test(t))) return;
+          var score = Math.abs(n - 10) + order * 0.3;     // 10語前後で、辞書の上位語義のものを優先
+          if (!best || score < best.score) best = { t: t, score: score };
+        });
+      });
+    });
+    return best ? best.t : null;
+  }
+
+  // ---------- ja.wiktionary（日本語の意味） ----------
+  var JA_POS = { '名詞': 'noun', '動詞': 'verb', '形容詞': 'adjective', '副詞': 'adverb', '前置詞': 'preposition', '接続詞': 'conjunction',
+    '代名詞': 'pronoun', '間投詞': 'interjection', '感動詞': 'interjection', '助動詞': 'auxiliary verb', '冠詞': 'article', '限定詞': 'determiner',
+    '数詞': 'numeral', '接頭辞': 'prefix', '接尾辞': 'suffix', '成句': 'phrase', '熟語': 'phrase', '慣用句': 'phrase', '略語': 'abbreviation', '固有名詞': 'proper noun' };
+
+  // 語釈1行を整える。文法ラベル(自動詞/他動詞…)は捨て、分野ラベル(化学・言語学…)は〈〉で残す。
+  // 「。」で区切られた言い換え（再建する。復興する。復元する。）は「、」でつなぐ。
+  var GRAMMAR_LABEL = /^(?:自動詞|他動詞|自|他|可算|不可算|可算名詞|不可算名詞|複数形|単数形|比較級|最上級)$/;
+  function cleanGloss(line) {
+    var s = line.replace(/^\s+/, '');
+    var label = '';
+    var lm;
+    while ((lm = s.match(/^\(([^)]*)\)\s*/))) {
+      lm[1].split(/[,、]\s*/).forEach(function (t) { t = t.trim(); if (t && JA_RE.test(t) && !GRAMMAR_LABEL.test(t) && !label) label = t; });
+      s = s.slice(lm[0].length);
+    }
+    s = s.replace(/\s*\([A-Za-z][^)]*\)/g, '');                                          // 「(about, for, on)」など英語の補足を除去
+    s = s.replace(/([\u4e00-\u9fff])\uff08[\u3041-\u3096\u30fc]+\uff09/g, '$1');         // ふりがな「和（やわ）らげる」→「和らげる」
+    s = s.replace(/[、,]?\s*cf\.\s*[A-Za-z][A-Za-z .-]*/gi, '');                          // 「cf.walk.」などの参照注記を除去
+    s = s.replace(/\s{2,}/g, ' ').trim();
+    var segs = s.split('\u3002').map(function (x) { return x.trim(); }).filter(Boolean);
+    var EXPLAIN = /(?:さま|こと|もの|の意|状態|場合)$/;                                     // 説明文っぽい断片は後ろへ回す（言い換え語を先に出す）
+    segs = segs.filter(function (x) { return !EXPLAIN.test(x); }).concat(segs.filter(function (x) { return EXPLAIN.test(x); }));
+    var short = segs.filter(function (x) { return x.length <= 20; });                  // 長い説明文は、短い言い換えがあれば捨てる
+    if (short.length) segs = short;
+    var out = '';
+    for (var i = 0; i < segs.length; i++) {
+      var next = out ? out + '\u3001' + segs[i] : segs[i];
+      if (out && next.length > 30) break;
+      out = next;
+    }
+    return (label && out ? '\u3008' + label + '\u3009' : '') + out;
+  }
+
+  // 英語の引用文らしい行＝英単語が5語以上連続する行。見出し行「ambiguous (比較級 more ambiguous, 最上級 …)」は連続しないので該当しない
+  function looksLikeEnglishQuote(line) {
+    return /[A-Za-z][A-Za-z'\u2019-]*(?:[ ,;]+[A-Za-z][A-Za-z'\u2019-]*){4,}/.test(line);
+  }
+
+  // 戻り値: [{pos, glosses:[..]}]  ※「英語」節のみ。語釈の後に出てくる英語引用文とその訳文は拾わない
+  function parseJa(data) {
+    var pages = data && data.query && data.query.pages;
+    if (!pages) return [];
+    var page = pages[Object.keys(pages)[0]];
+    if (!page || page.missing !== undefined || !page.extract) return [];
+    var m = page.extract.match(/(?:^|\n)== 英語 ==\n([\s\S]*?)(?=\n== [^=]|$)/);
+    if (!m) return [];
+    var sections = [];
+    var cur = null;
+    var lines = m[1].split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var h = line.match(/^(={3,})\s*(.+?)\s*\1\s*$/);
+      if (h) {
+        var title = h[2].replace(/\s*\d+$/, '');
+        cur = (h[1].length === 3 && JA_POS[title]) ? { pos: JA_POS[title], glosses: [], closed: false } : null;
+        if (cur) sections.push(cur);
+        continue;
+      }
+      if (!cur || cur.closed) continue;
+      if (looksLikeEnglishQuote(line)) { if (cur.glosses.length) cur.closed = true; continue; }
+      if (line.indexOf('\u3002') < 0 || !JA_RE.test(line)) continue;      // 語釈は「。」で終わる日本語の行
+      if (/^\s*(?:類義語|対義語|派生語|関連語|成句|参照)/.test(line)) continue;
+      var g = cleanGloss(line);
+      if (g && JA_RE.test(g) && cur.glosses.length < 3) cur.glosses.push(g);
+    }
+    return sections.filter(function (x) { return x.glosses.length; });
+  }
+
+  function joinGlosses(glosses) {
+    var s = glosses.join(' / ');
+    if (s.length > 50) s = glosses.slice(0, 2).join(' / ');
+    return s.length > 50 ? glosses[0] : s;
+  }
+  // ---------- MyMemory（意味の代替） ----------
+  function pickMyMemory(data, word) {
+    if (!data) return null;
+    var status = Number(data.responseStatus);
+    if (data.quotaFinished === true || status === 429) return { rateLimited: true };
+    if (status && status !== 200) return null;
+    function ok(t) {
+      if (typeof t !== 'string') return null;
+      t = t.replace(/<[^>]+>/g, '').replace(/[\s\u3000]*[?\uff1f:\uff1a]+\s*$/, '').trim();
+      if (!t || t.toLowerCase() === word || !JA_RE.test(t) || /MYMEMORY WARNING/i.test(t)) return null;
+      if (t.length > 30 || /[@]/.test(t)) return null;
+      return t;
+    }
+    // 見出しが完全一致する候補のうち quality が最も高い日本語訳（同点は先勝ち）を優先。無ければ translatedText。
+    var best = null;
+    (data.matches || []).forEach(function (m) {
+      if (String(m.segment || '').toLowerCase().replace(/[-\s]+/g, ' ').replace(/[.!?]+$/, '').trim() !== word.replace(/-/g, ' ')) return;
+      var t = ok(m.translation);
+      if (!t) return;
+      var q = Number(m.quality) || 0;
+      if (!best || q > best.q) best = { t: t, q: q };
+    });
+    if (best) return { text: best.t };
+    var top = ok(data.responseData && data.responseData.translatedText);
+    return top ? { text: top } : null;
+  }
+
+  // ---------- Tatoeba（例文の代替） ----------
+  function pickTatoeba(data, word) {
+    var list = (data && data.data) || [];
+    var re = formRegex(word);
+    var best = null;
+    list.forEach(function (s, idx) {
+      if (!s || s.lang !== 'eng' || s.is_unapproved || typeof s.text !== 'string') return;
+      var t = s.text.trim();
+      var n = wordCount(t);
+      if (n < 4 || n > 16 || !re.test(t) || !/[.!?]["']?$/.test(t) || /[^\x20-\x7e\u2018\u2019\u201c\u201d]/.test(t) || /\d/.test(t)) return;
+      var score = Math.abs(n - 9) + idx * 0.01;  // 9語前後・関連度上位を優先
+      if (!best || score < best.score) best = { t: t, score: score };
+    });
+    return best ? best.t : null;
+  }
+
+  // ---------- 本体 ----------
+  function encode(s) { return encodeURIComponent(s); }
+
+  function lookupOnce(word, opts, depth) {
+    var timeout = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
+    var detail = {};
+    var enP = getJSON('https://en.wiktionary.org/api/rest_v1/page/definition/' + encode(word), timeout);
+    var jaP = getJSON('https://ja.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles=' + encode(word), timeout);
+
+    return Promise.all([enP, jaP]).then(function (r) {
+      var en = r[0], ja = r[1];
+      detail.en_wiktionary = en.ok ? 'ok' : en.kind;
+      detail.ja_wiktionary = ja.ok ? 'ok' : ja.kind;
+
+      var entries = en.ok ? parseEn(en.data) : [];
+      if (en.ok && !entries.length) { detail.en_wiktionary = 'not_found'; }
+
+      // 活用形だけの語（mitigated, ran 等）→ 原形で引き直す（1回だけ）
+      if (depth < 1) {
+        var lemma = lemmaOf(entries);
+        if (lemma && lemma !== word) {
+          return lookupOnce(lemma, opts, depth + 1).then(function (res) { res.lemma = lemma; res.word = word; return res; });
+        }
+      }
+
+      var jaSecs = ja.ok ? parseJa(ja.data) : [];
+      var primary = null;
+      for (var i = 0; i < entries.length; i++) if (!entries[i].isFormOf) { primary = entries[i]; break; }
+      var primaryPos = primary ? primary.pos : null;
+
+      var meaning = null, pos = primaryPos, src = { meaning: null, pos: primaryPos ? 'en.wiktionary' : null, example: null };
+      // 意味は「主品詞と同じ品詞の節」から取る（品詞と意味を食い違わせない）。en側の品詞が分からなければ ja の先頭節
+      var sec = null;
+      for (var k = 0; k < jaSecs.length; k++) if (jaSecs[k].pos === primaryPos) { sec = jaSecs[k]; break; }
+      if (!sec && !primaryPos && jaSecs.length) sec = jaSecs[0];
+      if (sec) { meaning = joinGlosses(sec.glosses); pos = sec.pos; src.meaning = 'ja.wiktionary'; src.pos = primaryPos ? 'en.wiktionary' : 'ja.wiktionary'; }
+
+      // 例文（en.wiktionary → 無ければ後で Tatoeba）
+      var example = entries.length ? pickEnExample(entries, pos) : null;
+      if (example) src.example = 'en.wiktionary';
+
+      // 存在確認: en.wiktionary が「無い」と言い、ja.wiktionaryにも無い語は、MyMemoryに聞かない
+      // （MyMemoryは任意の文字列に200で入力そのままを返すため、綴りミスを「訳せた」と誤認する）
+      var exists = !!(entries.length || jaSecs.length);
+      var enDead = !en.ok && en.kind !== 'not_found';   // en.wiktionary障害中は存在確認できないので、MyMemoryに任せる
+      var needMM = !meaning && (exists || enDead);
+      var needTat = !example && (exists || enDead);
+
+      var mmP = needMM
+        ? getJSON('https://api.mymemory.translated.net/get?q=' + encode(word) + '&langpair=en%7Cja', timeout)
+        : Promise.resolve(null);
+      var tatP = needTat
+        ? getJSON('https://api.tatoeba.org/unstable/sentences?lang=eng&sort=relevance&limit=30&q=' + encode(word), timeout)
+        : Promise.resolve(null);
+
+      return Promise.all([mmP, tatP]).then(function (r2) {
+        var mm = r2[0], tat = r2[1];
+        if (mm) {
+          if (mm.ok) {
+            var pm = pickMyMemory(mm.data, word);
+            if (pm && pm.rateLimited) { detail.mymemory = 'rate_limit'; }
+            else if (pm) { meaning = pm.text; src.meaning = 'mymemory'; detail.mymemory = 'ok'; }
+            else detail.mymemory = 'no_translation';
+          } else detail.mymemory = mm.kind;
+        }
+        if (tat) {
+          if (tat.ok) {
+            var ex = pickTatoeba(tat.data, word);
+            if (ex) { example = ex; src.example = 'tatoeba'; detail.tatoeba = 'ok'; }
+            else detail.tatoeba = 'no_sentence';
+          } else detail.tatoeba = tat.kind;
+        }
+
+        // 主品詞の語釈が ja.wiktionary に無く MyMemory も駄目だった場合の最後の手段: ja の別品詞の節を、その品詞ごと採用
+        if (!meaning && jaSecs.length) {
+          meaning = joinGlosses(jaSecs[0].glosses); pos = jaSecs[0].pos; src.meaning = 'ja.wiktionary'; src.pos = 'ja.wiktionary';
+          if (src.example === 'en.wiktionary') example = pickEnExample(entries, pos) || example;
+        }
+
+        if (!meaning && !pos && !example) {
+          // 何も取れなかった: 原因を1つに決める
+          var kinds = Object.keys(detail).map(function (k) { return detail[k]; });
+          var has = function (x) { return kinds.indexOf(x) >= 0; };
+          var kind;
+          if (has('offline')) kind = 'offline';
+          else if (has('rate_limit')) kind = 'rate_limit';
+          else if (!exists && !enDead && (detail.ja_wiktionary === 'ok' || detail.ja_wiktionary === 'not_found') && detail.en_wiktionary === 'not_found') kind = 'not_found';
+          else kind = 'unavailable';
+          var msg = { offline: 'ネットワークに接続できません', rate_limit: 'アクセス上限に達しました。しばらくしてから試してください',
+            not_found: '「' + word + '」は辞書に見つかりませんでした（綴りを確認してください）', unavailable: '辞書サービスに接続できません。時間をおいて再試行してください' }[kind];
+          throw LookupError(kind, msg, detail);
+        }
+        return {
+          word: word,
+          meaning: meaning || null,
+          pos: pos || null,
+          example: example || null,
+          source: src,
+          partial: !(meaning && pos && example),
+          detail: detail
+        };
+      });
+    });
+  }
+
+  function lookupWord(input, opts) {
+    var word;
+    try { word = normalizeWord(input); } catch (e) { return Promise.reject(e); }
+    return lookupOnce(word, opts || {}, 0);
+  }
+
+  return { lookupWord: lookupWord, normalizeWord: normalizeWord, _internals: { parseEn: parseEn, parseJa: parseJa, pickMyMemory: pickMyMemory, pickTatoeba: pickTatoeba, pickEnExample: pickEnExample } };
+}));
+</script>
+<script>
 (function () {
 'use strict';
 
+/* =====================================================================
+   Dictionary lookup — the ONE integration point for auto-fill.
+   window.Wordbook.lookupWord(word) -> Promise of
+     { meaning, pos, example, lemma?, source: {meaning, pos, example}, partial }
+   (fields the dictionary did not have are null), or rejects with an Error
+   whose .kind is 'offline' | 'not_found' | 'rate_limit' | 'unavailable' | 'invalid_input'.
+   The default is the inlined lookup.js above. Assign a different function to
+   window.Wordbook.lookupWord to swap it; autofill() is its only caller.
+   ===================================================================== */
+window.Wordbook = { lookupWord: word => window.lookupWord(word) };
+
 /* ================= Data ================= */
+// Storage format is unchanged from v1: an array of word objects under 'wordbook.v1'.
 const KEY = 'wordbook.v1';
-let words = load();
+const DAYS_KEY = 'wordbook.days'; // review days, local dates 'YYYY-MM-DD'
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+// filled in at start-up (bottom of this script), after every helper below exists
+let words = [];
+let days = new Set();
 let filter = 'all';
 let query = '';
 const open = new Set();
 
+// Reads the saved words. A bad item is skipped, never the whole list; if the stored
+// text cannot be parsed at all, it is copied aside first so the next save cannot erase it.
 function load() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    const data = JSON.parse(raw);
-    return Array.isArray(data) ? data.map(normalize).filter(Boolean) : [];
-  } catch (e) { return []; }
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (e) { return []; }
+  if (!raw) return [];
+  let data;
+  try { data = JSON.parse(raw); } catch (e) { data = null; }
+  if (!Array.isArray(data)) {
+    try { localStorage.setItem(KEY + '.unreadable-' + Date.now(), raw); } catch (e) {}
+    return [];
+  }
+  const out = [];
+  for (const item of data) {
+    try { const w = normalize(item); if (w) out.push(w); } catch (e) {}
+  }
+  return out;
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(words)); return true; }
   catch (e) { toast('Could not save. Storage may be full or blocked.'); return false; }
+}
+function loadDays() {
+  try {
+    const a = JSON.parse(localStorage.getItem(DAYS_KEY) || '[]');
+    return new Set(Array.isArray(a) ? a.filter(d => typeof d === 'string' && DAY_RE.test(d)) : []);
+  } catch (e) { return new Set(); }
+}
+function saveDays() {
+  try { localStorage.setItem(DAYS_KEY, JSON.stringify([...days].sort())); } catch (e) {}
 }
 function uid() {
   if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
 function str(v) { return typeof v === 'string' ? v.trim() : ''; }
+// where an auto-filled field came from (optional; words saved by v1 have none)
+const SRC_OK = { meaning: ['ja.wiktionary', 'mymemory'], pos: ['en.wiktionary', 'ja.wiktionary'], example: ['en.wiktionary', 'tatoeba'] };
+function normSrc(s) {
+  if (!s || typeof s !== 'object') return null;
+  const o = {};
+  for (const k in SRC_OK) if (SRC_OK[k].includes(s[k])) o[k] = s[k];
+  return Object.keys(o).length ? o : null;
+}
 function normalize(w) {
   if (!w || typeof w !== 'object') return null;
   const word = str(w.word);
   if (!word) return null;
   const now = Date.now();
+  const src = normSrc(w.src);
   return {
+    ...(src ? { src } : {}),
     id: str(w.id) || uid(),
     word,
     meaning: str(w.meaning),
@@ -493,15 +945,29 @@ function numbering() {
   return m;
 }
 
+/* ================= Days & streak (device local time) ================= */
+function pad2(n) { return String(n).padStart(2, '0'); }
+function dayKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+function markToday() {
+  const k = dayKey(new Date());
+  if (!days.has(k)) { days.add(k); saveDays(); }
+}
+// consecutive days ending today, or ending yesterday if today is not done yet
+function streak() {
+  let d = new Date();
+  if (!days.has(dayKey(d))) d = addDays(d, -1);
+  let n = 0;
+  while (days.has(dayKey(d))) { n++; d = addDays(d, -1); }
+  return n;
+}
+
 /* ================= Speech ================= */
-// iOS Safari notes: voices arrive asynchronously (getVoices() is often empty at first),
-// speak() must run inside a user gesture, and the utterance must stay referenced
-// or it can be garbage-collected mid-sentence. Novelty voices (Bells, Zarvox...) are also en-US.
+// iOS Safari: voices arrive asynchronously, speak() must run inside a user gesture,
+// and the utterance must stay referenced or it can be cut off. Novelty voices are en-US too.
 const Speech = {
   ok: 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window,
-  voice: null,
-  current: null,
-  btn: null,
+  voice: null, current: null, btn: null,
   NOVELTY: /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|kathy|ralph|grandma|grandpa|eddy|flo|reed|rocko|sandy|shelley/i,
   pick() {
     if (!this.ok) return;
@@ -517,27 +983,20 @@ const Speech = {
   init() {
     if (!this.ok) return;
     this.pick();
-    if (typeof speechSynthesis.addEventListener === 'function') {
-      speechSynthesis.addEventListener('voiceschanged', () => this.pick());
-    } else {
-      speechSynthesis.onvoiceschanged = () => this.pick();
-    }
+    if (typeof speechSynthesis.addEventListener === 'function') speechSynthesis.addEventListener('voiceschanged', () => this.pick());
+    else speechSynthesis.onvoiceschanged = () => this.pick();
   },
   speak(text, btn) {
     if (!this.ok || !text) return;
     if (!this.voice) this.pick();
-    // cancel only when something is actually queued; cancel()+speak() back to back
-    // has been reported to swallow the new utterance on some iOS versions
     if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'en-US';
     if (this.voice) u.voice = this.voice;
-    u.rate = 0.92;
-    u.pitch = 1;
+    u.rate = 0.92; u.pitch = 1;
     this.mark(btn);
     const done = () => { if (this.current === u) { this.current = null; this.mark(null); } };
-    u.onend = done;
-    u.onerror = done;
+    u.onend = done; u.onerror = done;
     this.current = u;
     if (speechSynthesis.paused) speechSynthesis.resume();
     speechSynthesis.speak(u);
@@ -556,10 +1015,13 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 const ICON = {
-  speak: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="wave" d="M15.5 9.2a4 4 0 0 1 0 5.6"/><path class="wave" d="M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',
-  check: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 6.2l2.3 2.3 4.5-4.9"/></svg>',
-  search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg>',
-  close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+  speak: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="wave" d="M15.5 9.2a4 4 0 0 1 0 5.6"/><path class="wave" d="M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',
+  check: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 6.2l2.3 2.3 4.5-4.9"/></svg>',
+  search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg>',
+  close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  back: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>',
+  prev: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>',
+  next: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>'
 };
 function speakBtn(text, label, extra) {
   if (!Speech.ok) return '';
@@ -567,10 +1029,15 @@ function speakBtn(text, label, extra) {
 }
 function pad(n) { return String(n).padStart(3, '0'); }
 function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+function topBar() {
+  return `<header class="top"><div class="wrap"><button class="home-btn" data-act="home">${ICON.back}Home</button></div></header>`;
+}
+const reduced = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let toastTimer = null;
+function clearToast() { const t = $('.toast'); if (t) t.remove(); }
 function toast(msg) {
-  const old = $('.toast'); if (old) old.remove();
+  clearToast();
   const t = document.createElement('div');
   t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
   document.body.appendChild(t);
@@ -580,7 +1047,7 @@ function toast(msg) {
 
 /* ================= Dialog ================= */
 function dialog({ label, title, body, actions }) {
-  const t = $('.toast'); if (t) t.remove();
+  clearToast();
   return new Promise(resolve => {
     const scrim = document.createElement('div');
     scrim.className = 'scrim';
@@ -605,7 +1072,69 @@ function dialog({ label, title, body, actions }) {
   });
 }
 
-/* ================= List view ================= */
+/* ================= Home: streak + calendar ================= */
+let calMonth = null; // { y, m } shown in the calendar
+
+function renderHome() {
+  const now = new Date();
+  if (!calMonth) calMonth = { y: now.getFullYear(), m: now.getMonth() };
+  const s = streak();
+  const doneToday = days.has(dayKey(now));
+  const sub = s === 0
+    ? (days.size ? 'Flip a card in Review to start a new streak.' : 'Flip a card in Review to start a streak.')
+    : (doneToday ? 'You reviewed today.' : 'Review a card today to keep it going.');
+
+  const { y, m } = calMonth;
+  const first = new Date(y, m, 1);
+  const lead = first.getDay();
+  const count = new Date(y, m + 1, 0).getDate();
+  const todayKey = dayKey(now);
+  const cells = [];
+  for (let i = 0; i < 42; i++) {
+    const n = i - lead + 1;
+    if (n < 1 || n > count) { cells.push('<div class="day" aria-hidden="true"></div>'); continue; }
+    const d = new Date(y, m, n);
+    const k = dayKey(d);
+    const done = days.has(k), isToday = k === todayKey, future = d > now && !isToday;
+    const cls = ['day', done && 'done', isToday && 'today', future && 'future'].filter(Boolean).join(' ');
+    const aria = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) + (isToday ? ', today' : '') + (done ? ', reviewed' : '');
+    cells.push(`<div class="${cls}" data-day="${k}" aria-label="${aria}"><i></i><span>${n}</span></div>`);
+  }
+  // drop a fully empty last row so short months don't leave a hole
+  if (lead + count <= 35) cells.length = 35;
+  const isThisMonth = y === now.getFullYear() && m === now.getMonth();
+  const title = first.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  $('#s-home').innerHTML = `<div class="home wrap">
+    <div class="home-top">
+      <span class="label">Wordbook</span>
+      <span class="label">${now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+    </div>
+    <div class="home-center">
+      <div class="streak">
+        <span class="streak-n num" id="streak-n">${s}</span>
+        <span class="label">Day streak</span>
+        <p class="streak-sub">${sub}</p>
+      </div>
+      <div class="cal" role="group" aria-label="Review calendar">
+        <div class="cal-head">
+          <span class="cal-title" id="cal-title">${title}</span>
+          <div class="cal-nav">
+            ${isThisMonth ? '' : '<button class="cal-today" data-act="cal-today">Today</button>'}
+            <button class="icon-btn" data-act="cal" data-d="-1" aria-label="Previous month">${ICON.prev}</button>
+            <button class="icon-btn" data-act="cal" data-d="1" aria-label="Next month">${ICON.next}</button>
+          </div>
+        </div>
+        <div class="cal-grid">
+          ${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<div class="cal-wd">${d}</div>`).join('')}
+          ${cells.join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ================= List ================= */
 function visible() {
   const q = query.trim().toLowerCase();
   return words
@@ -613,52 +1142,40 @@ function visible() {
     .filter(w => !q || [w.word, w.meaning, w.pos, w.example, w.note].some(f => f.toLowerCase().includes(q)))
     .sort((a, b) => b.createdAt - a.createdAt);
 }
-
 function resultsHTML() {
   const total = words.length;
   const list = visible();
   const nums = numbering();
-  let body;
   if (!total) {
-    body = `<section class="empty-state">
-      <h2>No words yet.</h2>
-      <p>Add the first word you want to keep. It stays on this device.</p>
-    </section>`;
-  } else if (!list.length) {
+    return `<section class="empty-state"><h2>No words yet.</h2>
+      <p>Add the first word you want to keep from the Add tab. It stays on this device.</p></section>`;
+  }
+  if (!list.length) {
     const what = query.trim()
       ? `Nothing matches “${esc(query.trim())}”.`
       : (filter === 'learned' ? 'Nothing learned yet.' : 'Every word is learned.');
-    body = `<section class="empty-state"><h2>${what}</h2>
+    return `<section class="empty-state"><h2>${what}</h2>
       <p>${query.trim() ? 'Try another spelling, or clear the search.' : 'Switch the filter above to see the rest.'}</p></section>`;
-  } else {
-    body = `<div class="list-head">
-        <span class="label">${plural(list.length, 'entry', 'entries')}</span>
-        <span class="label">Newest first</span>
-      </div>
-      <ol class="entries">${list.map(w => entryHTML(w, nums.get(w.id))).join('')}</ol>`;
   }
-  return body;
+  return `<div class="list-head">
+      <span class="label">${plural(list.length, 'entry', 'entries')}</span>
+      <span class="label">Newest first</span>
+    </div>
+    <ol class="entries">${list.map(w => entryHTML(w, nums.get(w.id))).join('')}</ol>`;
 }
-
 function renderList() {
   const total = words.length;
   const learned = words.filter(w => w.learned).length;
-  const notyet = total - learned;
-
-  $('#app').innerHTML = `
+  const el = $('#s-list');
+  const y = el.scrollTop;
+  el.innerHTML = `${topBar()}
   <div class="wrap">
-    <header class="mast">
-      <div class="mast-top">
-        <span class="label">Personal vocabulary</span>
-        <span class="label num">${new Date().getFullYear()}</span>
-      </div>
-      <h1 class="title">Wordbook</h1>
-      <div class="stats" role="group" aria-label="Filter">
-        ${statHTML('all', total, 'All words')}
-        ${statHTML('notyet', notyet, 'Not yet')}
-        ${statHTML('learned', learned, 'Learned')}
-      </div>
-    </header>
+    <h1 class="screen-title">List</h1>
+    <div class="stats" role="group" aria-label="Filter">
+      ${statHTML('all', total, 'All words')}
+      ${statHTML('notyet', total - learned, 'Not yet')}
+      ${statHTML('learned', learned, 'Learned')}
+    </div>
     ${total ? `<div class="search"><label class="search-row">
       ${ICON.search}
       <input id="q" type="search" value="${esc(query)}" placeholder="Search words, meanings, notes" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search">
@@ -673,24 +1190,47 @@ function renderList() {
         <button class="text-btn" data-act="import">Import JSON</button>
       </div>
     </section>
+    ${sourcesHTML()}
     <footer class="colophon label">Wordbook &middot; Stored locally${Speech.ok ? '' : ' &middot; Speech not supported here'}</footer>
-  </div>
-  <nav class="bar"><div class="wrap">
-    <button class="btn" data-act="review" ${total ? '' : 'disabled'}>Review</button>
-    <button class="btn solid" data-act="add">Add word</button>
-  </div></nav>`;
+  </div>`;
+  el.scrollTop = y;
 }
-// search only swaps the results, so the input (and the phone keyboard) stays put
+// credits for the dictionaries that auto-filled any saved word
+const SOURCES = {
+  wiktionary: { name: 'Wiktionary', url: 'https://www.wiktionary.org/', what: 'meanings, parts of speech and examples', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/' },
+  tatoeba: { name: 'Tatoeba', url: 'https://tatoeba.org/', what: 'example sentences', license: 'CC BY 2.0 FR', licenseUrl: 'https://creativecommons.org/licenses/by/2.0/fr/' },
+  mymemory: { name: 'MyMemory', url: 'https://mymemory.translated.net/', what: 'machine-translated meanings', license: '', licenseUrl: '' }
+};
+const srcGroup = s => (s === 'tatoeba' ? 'tatoeba' : s === 'mymemory' ? 'mymemory' : 'wiktionary');
+function sourcesUsed() {
+  const used = new Set();
+  words.forEach(w => { if (w.src) Object.values(w.src).forEach(s => used.add(srcGroup(s))); });
+  return Object.keys(SOURCES).filter(k => used.has(k));
+}
+function sourcesHTML() {
+  const used = sourcesUsed();
+  if (!used.length) return '';
+  return `<section class="sources">
+    <div class="label">Sources</div>
+    <ul>${used.map(k => { const s = SOURCES[k]; return `<li><a href="${s.url}" target="_blank" rel="noopener">${s.name}</a> — ${s.what}${s.license ? `, <a href="${s.licenseUrl}" target="_blank" rel="noopener">${s.license}</a>` : ''}</li>`; }).join('')}</ul>
+  </section>`;
+}
+function srcLine(w) {
+  if (!w.src) return '';
+  const parts = [];
+  if (w.src.meaning) parts.push('Meaning: ' + SOURCES[srcGroup(w.src.meaning)].name);
+  if (w.src.example) parts.push('Example: ' + SOURCES[srcGroup(w.src.example)].name);
+  return parts.length ? `<p class="src-line">${parts.join(' · ')}</p>` : '';
+}
 function renderResults() {
-  $('#results').innerHTML = resultsHTML();
-  const c = $('.clear-btn'); if (c) c.hidden = !query;
+  const r = $('#results'); if (!r) return;
+  r.innerHTML = resultsHTML();
+  const c = $('#s-list .clear-btn'); if (c) c.hidden = !query;
 }
-
 function statHTML(key, n, label) {
   return `<button class="stat" data-act="filter" data-f="${key}" aria-pressed="${filter === key}">
     <span class="n num">${n}</span><span class="label">${label}</span></button>`;
 }
-
 function entryHTML(w, no) {
   const isOpen = open.has(w.id);
   return `<li class="entry" data-id="${esc(w.id)}">
@@ -714,6 +1254,7 @@ function entryHTML(w, no) {
         <span class="label">My note</span>
         <p class="note">${w.note ? esc(w.note) : '—'}</p>
       </div>
+      ${srcLine(w)}
       <div class="entry-actions">
         <button class="text-btn" data-act="edit">Edit</button>
         <button class="text-btn danger" data-act="delete">Delete</button>
@@ -722,104 +1263,253 @@ function entryHTML(w, no) {
   </li>`;
 }
 
-/* ================= Form view ================= */
+/* ================= Add ================= */
 const POS = ['noun', 'verb', 'adjective', 'adverb', 'phrase', 'idiom', 'preposition', 'conjunction'];
-let editingId = null;
+let addedId = null;
+let addedStatus = '';
+let addedBusy = false;
+let addedRetry = false;   // offer "Try again" (offline / busy / unreachable)
+let addedLemma = null;    // base form the dictionary answered with (ran -> run)
+let saveTimer = null;
 
-function openForm(id) {
-  editingId = id || null;
-  const w = id ? byId(id) : { word: '', meaning: '', pos: '', example: '', note: '', learned: false };
+function renderAdd() {
+  const el = $('#s-add');
+  if (!$('#add-form', el)) {
+    el.innerHTML = `${topBar()}
+    <div class="wrap">
+      <h1 class="screen-title">Add</h1>
+      <form class="add-row" id="add-form" novalidate autocomplete="off">
+        <input id="add-word" type="text" placeholder="Type an English word" aria-label="English word"
+          autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done">
+        <button class="btn solid" type="submit">Add</button>
+      </form>
+      <p class="add-err" id="add-err" hidden>Type a word first.</p>
+      <p class="hint">The word is saved right away. Its meaning, part of speech and an example are then looked up in free online dictionaries. Anything can be changed by hand.</p>
+      <section id="added" aria-live="polite"></section>
+    </div>`;
+    $('#add-form').addEventListener('submit', e => { e.preventDefault(); addWord(); });
+    $('#add-word').addEventListener('input', () => { $('#add-err').hidden = true; });
+  }
+  renderAdded();
+}
+
+function statusHTML() {
+  const w = addedId ? byId(addedId) : null;
+  const canRename = w && addedLemma && !words.some(x => x.id !== w.id && x.word.toLowerCase() === addedLemma.toLowerCase());
+  return `<p class="status ${addedBusy ? 'busy' : ''}" id="lookup-status">${esc(addedStatus)}</p>
+    ${addedLemma && w ? `<p class="status" id="lemma-note">These details are for “${esc(addedLemma)}”, the base form of “${esc(w.word)}”.</p>` : ''}
+    ${(addedRetry && !addedBusy) || canRename ? `<div class="status-actions">
+      ${addedRetry && !addedBusy ? '<button class="text-btn" data-act="retry">Try again</button>' : ''}
+      ${canRename ? `<button class="text-btn" data-act="use-lemma">Save as “${esc(addedLemma)}”</button>` : ''}
+    </div>` : ''}`;
+}
+function renderStatus() {
+  const s = $('#status-box');
+  if (s) s.innerHTML = statusHTML();
+}
+
+function renderAdded() {
+  const box = $('#added');
+  if (!box) return;
+  const w = addedId ? byId(addedId) : null;
+  if (!w) { box.className = ''; box.innerHTML = ''; return; }
+  box.className = 'added';
+  box.innerHTML = `
+    <div class="added-head"><span class="label">Just added</span><span class="label" id="autosave">Saved automatically</span></div>
+    <div id="status-box">${statusHTML()}</div>
+    <label class="fld"><span class="label">English word</span>
+      <input type="text" class="big" data-field="word" value="${esc(w.word)}" autocapitalize="none" spellcheck="false"></label>
+    <label class="fld"><span class="label">Meaning</span>
+      <textarea rows="1" data-field="meaning">${esc(w.meaning)}</textarea></label>
+    <div class="fld"><span class="label">Part of speech</span>
+      <input type="text" data-field="pos" value="${esc(w.pos)}" autocapitalize="none" placeholder="Type or choose below" aria-label="Part of speech">
+      <div class="chips">${POS.map(p => `<button type="button" class="chip" data-act="add-pos" data-pos="${p}" aria-pressed="${w.pos === p}">${p}</button>`).join('')}</div>
+    </div>
+    <label class="fld"><span class="label">Example sentence</span>
+      <textarea rows="1" data-field="example" spellcheck="false">${esc(w.example)}</textarea></label>
+    <label class="fld"><span class="label">My note</span>
+      <textarea rows="2" data-field="note">${esc(w.note)}</textarea></label>`;
+  box.querySelectorAll('textarea').forEach(autosize);
+  box.oninput = e => {
+    const f = e.target.dataset.field;
+    if (!f) return;
+    if (e.target.tagName === 'TEXTAREA') autosize(e.target);
+    if (f === 'pos') syncChips(box, e.target.value);
+    queueSave(f, e.target.value);
+  };
+  box.onfocusout = e => {
+    if (e.target.dataset.field === 'word' && !e.target.value.trim()) e.target.value = byId(addedId)?.word || '';
+  };
+}
+
+// a field typed by hand is no longer "from the dictionary"
+function dropSrc(w, field) {
+  if (w.src && w.src[field]) { delete w.src[field]; if (!Object.keys(w.src).length) delete w.src; }
+}
+function queueSave(field, value) {
+  const w = byId(addedId);
   if (!w) return;
+  const v = value.trim();
+  if (field === 'word' && !v) return; // never store an empty word
+  if (w[field] !== v) dropSrc(w, field);
+  w[field] = v;
+  w.updatedAt = Date.now();
+  const tag = $('#autosave'); if (tag) tag.textContent = 'Saving…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { save(); const t = $('#autosave'); if (t) t.textContent = 'Saved automatically'; }, 250);
+}
+
+function addWord() {
+  const input = $('#add-word');
+  const text = input.value.trim().replace(/\s+/g, ' ');
+  if (!text) { $('#add-err').hidden = false; input.focus(); return; }
+  clearTimeout(saveTimer); save(); // flush edits to the previous word
+  const dup = words.find(w => w.word.toLowerCase() === text.toLowerCase());
+  input.value = '';
+  if (dup) {
+    addedId = dup.id; addedBusy = false; addedRetry = false; addedLemma = null;
+    addedStatus = 'Already in your list. Showing the saved entry.';
+    renderAdded();
+    return;
+  }
+  const now = Date.now();
+  const w = normalize({ id: uid(), word: text, createdAt: now, updatedAt: now });
+  words.push(w);
+  save();
+  addedId = w.id; addedBusy = true; addedRetry = false; addedLemma = null;
+  addedStatus = 'Saved. Looking it up…';
+  renderAdded();
+  queueLookup(w.id);
+}
+
+// Lookups run one at a time, in the order the words were added
+// (Tatoeba drops requests when many arrive at once).
+let lookupChain = Promise.resolve();
+function queueLookup(id) {
+  const p = lookupChain.then(() => autofill(id));
+  lookupChain = p.catch(() => {});
+  return p;
+}
+
+const LOOKUP_ERROR = {
+  offline: w => ({ text: `You’re offline, so “${w}” was saved without details. Try again when you’re back online, or fill them in yourself.`, retry: true }),
+  not_found: w => ({ text: `“${w}” isn’t in the dictionary. The word is saved; fill in the details yourself (and check the spelling).`, retry: false }),
+  rate_limit: w => ({ text: `The dictionary is busy (too many requests). “${w}” is saved; try again later or fill in the details yourself.`, retry: true }),
+  unavailable: w => ({ text: `The dictionary couldn’t be reached. “${w}” is saved; try again or fill in the details yourself.`, retry: true }),
+  invalid_input: w => ({ text: `“${w}” doesn’t look like an English word or phrase, so it wasn’t looked up. It is saved; fill in the details yourself.`, retry: false })
+};
+
+// the single call site of window.Wordbook.lookupWord(): fills only the fields that are still empty
+async function autofill(id) {
+  const w = byId(id);
+  if (!w) return;
+  if (addedId === id && !addedBusy) { addedBusy = true; addedRetry = false; addedStatus = 'Looking it up…'; renderStatus(); }
+  let res = null, kind = null;
+  try { res = await window.Wordbook.lookupWord(w.word); }
+  catch (e) { kind = (e && LOOKUP_ERROR[e.kind]) ? e.kind : 'unavailable'; }
+  const cur = byId(id);
+  if (!cur) return;
+  let filled = 0, found = 0;
+  if (!kind && res && typeof res === 'object') {
+    const src = (res.source && typeof res.source === 'object') ? res.source : {};
+    for (const f of ['meaning', 'pos', 'example']) {
+      const v = str(res[f]);
+      if (!v) continue;
+      found++;
+      if (!cur[f]) {
+        cur[f] = v; filled++;
+        if (src[f]) { cur.src = normSrc({ ...(cur.src || {}), [f]: src[f] }) || undefined; if (!cur.src) delete cur.src; }
+      }
+    }
+  }
+  if (filled) { cur.updatedAt = Date.now(); save(); }
+  if (addedId !== id) return;
+
+  addedBusy = false; addedRetry = false;
+  addedLemma = (!kind && res && typeof res.lemma === 'string' && res.lemma && res.lemma.toLowerCase() !== cur.word.toLowerCase()) ? res.lemma : null;
+  if (kind) {
+    const m = LOOKUP_ERROR[kind](cur.word);
+    addedStatus = m.text; addedRetry = m.retry;
+  } else if (!found) addedStatus = 'The dictionary had nothing for this word. Fill in the details yourself.';
+  else if (!filled) addedStatus = 'Your own entries were kept; nothing was overwritten.';
+  else if (found < 3) addedStatus = 'Filled in what the dictionary had. Add the rest yourself.';
+  else addedStatus = 'Filled in from the dictionary. Edit anything below.';
+
+  // update only the fields the user has not touched; keep focus where it is
+  const box = $('#added');
+  if (!box || !box.firstElementChild) return renderAdded();
+  renderStatus();
+  for (const f of ['meaning', 'pos', 'example']) {
+    const el = box.querySelector(`[data-field="${f}"]`);
+    if (el && !el.value.trim() && cur[f]) { el.value = cur[f]; if (el.tagName === 'TEXTAREA') autosize(el); }
+  }
+  syncChips(box, cur.pos);
+}
+
+function autosize(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
+function syncChips(root, value) {
+  const v = String(value || '').trim().toLowerCase();
+  root.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.pos === v)));
+}
+
+/* ================= Edit overlay (from List) ================= */
+let editingId = null;
+function openForm(id) {
+  const w = byId(id);
+  if (!w) return;
+  editingId = id;
   pushView('form');
   $('#layer').innerHTML = `<div class="view" id="form-view">
     <div class="view-top"><div class="wrap">
       <button class="top-btn" data-act="cancel">Cancel</button>
-      <span class="label">${id ? 'Edit word' : 'New word'}</span>
+      <span class="label">Edit word</span>
       <button class="top-btn right" data-act="save">Save</button>
     </div></div>
     <form class="wrap form" id="form" novalidate autocomplete="off">
-      <label class="fld" id="fld-word">
-        <span class="label">English word</span>
-        <input type="text" name="word" class="serif-input" value="${esc(w.word)}" autocapitalize="off" spellcheck="false" enterkeyhint="next">
-        <div class="err" hidden>Enter a word.</div>
-      </label>
-      <label class="fld">
-        <span class="label">Meaning</span>
-        <textarea name="meaning" rows="2">${esc(w.meaning)}</textarea>
-      </label>
-      <div class="fld">
-        <label class="label" for="pos">Part of speech</label>
-        <input type="text" id="pos" name="pos" value="${esc(w.pos)}" autocapitalize="off" placeholder="Type or choose below" enterkeyhint="next">
-        <div class="chips">${POS.map(p =>
-          `<button type="button" class="chip" data-act="pos" data-pos="${p}" aria-pressed="${w.pos === p}">${p}</button>`).join('')}</div>
-      </div>
-      <label class="fld">
-        <span class="label">Example sentence</span>
-        <textarea name="example" rows="2" class="serif-italic" spellcheck="false">${esc(w.example)}</textarea>
-      </label>
-      <label class="fld">
-        <span class="label">My note</span>
-        <textarea name="note" rows="3">${esc(w.note)}</textarea>
-      </label>
-      <button type="button" class="toggle-row" data-act="form-learned" aria-pressed="${w.learned}">
-        <span>Learned</span><span class="mark">${ICON.check}</span>
-      </button>
-      ${id ? `<div class="form-delete"><button type="button" class="text-btn danger" data-act="delete">Delete this word</button></div>` : ''}
+      <label class="fld" id="fld-word"><span class="label">English word</span>
+        <input type="text" name="word" class="big" value="${esc(w.word)}" autocapitalize="off" spellcheck="false">
+        <div class="err" hidden>Enter a word.</div></label>
+      <label class="fld"><span class="label">Meaning</span><textarea name="meaning" rows="1">${esc(w.meaning)}</textarea></label>
+      <div class="fld"><label class="label" for="pos">Part of speech</label>
+        <input type="text" id="pos" name="pos" value="${esc(w.pos)}" autocapitalize="off" placeholder="Type or choose below">
+        <div class="chips">${POS.map(p => `<button type="button" class="chip" data-act="pos" data-pos="${p}" aria-pressed="${w.pos === p}">${p}</button>`).join('')}</div></div>
+      <label class="fld"><span class="label">Example sentence</span><textarea name="example" rows="1" spellcheck="false">${esc(w.example)}</textarea></label>
+      <label class="fld"><span class="label">My note</span><textarea name="note" rows="2">${esc(w.note)}</textarea></label>
+      <button type="button" class="toggle-row" data-act="form-learned" aria-pressed="${w.learned}"><span>Learned</span><span class="mark">${ICON.check}</span></button>
+      <div class="form-delete"><button type="button" class="text-btn danger" data-act="delete">Delete this word</button></div>
     </form>
   </div>`;
   const view = $('#form-view');
   view.querySelectorAll('textarea').forEach(autosize);
   view.addEventListener('input', e => {
     if (e.target.tagName === 'TEXTAREA') autosize(e.target);
-    if (e.target.name === 'pos') syncChips();
-    if (e.target.name === 'word') $('#fld-word').classList.remove('invalid'), $('#fld-word .err').hidden = true;
+    if (e.target.name === 'pos') syncChips(view, e.target.value);
+    if (e.target.name === 'word') { $('#fld-word').classList.remove('invalid'); $('#fld-word .err').hidden = true; }
   });
   $('#form').addEventListener('submit', e => { e.preventDefault(); saveForm(); });
-  if (!id) setTimeout(() => { const i = $('#form [name=word]'); if (i) i.focus(); }, 60);
-}
-function autosize(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
-function syncChips() {
-  const v = $('#pos').value.trim().toLowerCase();
-  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.pos === v)));
 }
 function saveForm() {
   const f = $('#form');
   const data = {
-    word: f.word.value.trim(),
-    meaning: f.meaning.value.trim(),
-    pos: f.pos.value.trim(),
-    example: f.example.value.trim(),
-    note: f.note.value.trim(),
+    word: f.word.value.trim(), meaning: f.meaning.value.trim(), pos: f.pos.value.trim(),
+    example: f.example.value.trim(), note: f.note.value.trim(),
     learned: $('[data-act="form-learned"]').getAttribute('aria-pressed') === 'true'
   };
   if (!data.word) {
-    $('#fld-word').classList.add('invalid');
-    $('#fld-word .err').hidden = false;
-    f.word.focus();
-    return;
+    $('#fld-word').classList.add('invalid'); $('#fld-word .err').hidden = false; f.word.focus(); return;
   }
-  const now = Date.now();
-  if (editingId) {
-    Object.assign(byId(editingId), data, { updatedAt: now });
-  } else {
-    const w = normalize(Object.assign({ id: uid(), createdAt: now, updatedAt: now }, data));
-    words.push(w);
-    open.clear();
-  }
+  const target = byId(editingId);
+  ['meaning', 'pos', 'example'].forEach(k => { if (target[k] !== data[k]) dropSrc(target, k); });
+  Object.assign(target, data, { updatedAt: Date.now() });
   if (!save()) return;
-  const msg = editingId ? 'Saved.' : `Added “${data.word}”.`;
   closeView();
-  toast(msg);
+  toast('Saved.');
 }
 
-/* ================= Review view ================= */
+/* ================= Review ================= */
 let deck = [], pos = 0, revealed = false, scope = 'notyet';
-
 function shuffle(a) {
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
 function buildDeck() {
@@ -827,13 +1517,22 @@ function buildDeck() {
   deck = shuffle(src.map(w => w.id));
   pos = 0; revealed = false;
 }
-function openReview() {
-  scope = words.some(w => !w.learned) ? 'notyet' : 'all';
-  buildDeck();
-  pushView('review');
-  renderReview();
+function enterReview() {
+  // keep a session in progress; start a new one when there is none
+  deck = deck.filter(id => byId(id));
+  if (!deck.length || pos >= deck.length) {
+    scope = words.some(w => !w.learned) ? 'notyet' : 'all';
+    buildDeck();
+  }
+}
+function meaningHTML(m) {
+  if (!m) return '<p class="card-meaning">—</p>';
+  const parts = m.split(' / ').map(x => x.trim()).filter(Boolean);
+  if (parts.length < 2) return '<p class="card-meaning">' + esc(m) + '</p>';
+  return '<ol class="card-senses">' + parts.map(p => '<li>' + esc(p) + '</li>').join('') + '</ol>';
 }
 function renderReview() {
+  while (pos < deck.length && !byId(deck[pos])) pos++;
   const notyet = words.filter(w => !w.learned).length;
   const total = deck.length;
   const finished = pos >= total;
@@ -842,15 +1541,14 @@ function renderReview() {
 
   let main, bar;
   if (!total) {
-    main = `<div class="card wrap done"><h2>Nothing to review.</h2>
-      <p>${scope === 'notyet' ? 'Every word is marked as learned. Switch to All words to go through them again.' : 'Add a few words first.'}</p></div>`;
-    bar = `<button class="btn" data-act="close-review">Close</button>`;
+    main = `<div class="card wrap done"><div class="label">Review</div><h2>Nothing to review.</h2>
+      <p>${words.length ? 'Every word is marked as learned. Switch to All to go through them again.' : 'Add a few words from the Add tab first.'}</p></div>`;
+    bar = '';
   } else if (finished) {
     main = `<div class="card wrap done"><div class="label">Session complete</div>
-      <h2 style="margin-top:14px">That’s all ${plural(total, 'word', 'words')}.</h2>
-      <p>Shuffle again for another round, or close to go back to the list.</p></div>`;
-    bar = `<div class="done-actions" style="margin-top:0"><button class="btn solid" data-act="again">Shuffle again</button>
-      <button class="btn" data-act="close-review">Close</button></div>`;
+      <h2>That’s all ${plural(total, 'word', 'words')}.</h2>
+      <p>Shuffle again for another round.</p></div>`;
+    bar = `<button class="btn solid" data-act="again">Shuffle again</button>`;
   } else {
     main = `<div class="card wrap">
       <div class="card-no"><span class="label num">${pad(pos + 1)} / ${pad(total)}</span>
@@ -861,14 +1559,13 @@ function renderReview() {
       <div class="card-reveal">
         ${revealed ? `
           <div class="label" style="margin-bottom:6px">Meaning</div>
-          <p class="card-meaning">${w.meaning ? esc(w.meaning) : '—'}</p>
+          ${meaningHTML(w.meaning)}
           ${w.example ? `<div class="card-example"><div class="label">Example</div>
             <div class="example-row"><p class="example">${esc(w.example)}</p>${speakBtn(w.example, 'Read the example aloud')}</div></div>` : ''}
-          ${w.note ? `<div class="card-example"><div class="label">My note</div><p class="note" style="margin-top:6px">${esc(w.note)}</p></div>` : ''}
+          ${w.note ? `<div class="card-example"><div class="label">My note</div><p class="note">${esc(w.note)}</p></div>` : ''}
         ` : `<p class="card-hint">Say the meaning to yourself, then check.</p>`}
       </div>
     </div>`;
-    // back of the card: grading saves the Learned flag and moves on
     bar = revealed
       ? `<div class="grade" role="group" aria-label="Mark this word">
           <button class="btn" data-act="grade" data-v="notyet"><span class="mark"></span>Not yet</button>
@@ -876,20 +1573,9 @@ function renderReview() {
         </div>`
       : `<button class="btn solid" data-act="reveal">Show meaning</button>`;
   }
-
-  // keep the same container between cards so the entrance animation plays only once
-  let host = $('#review-view');
-  if (!host) {
-    $('#layer').innerHTML = `<div class="view review" id="review-view"></div>`;
-    host = $('#review-view');
-  }
-  host.innerHTML = `
-    <div class="view-top"><div class="wrap">
-      <button class="top-btn" data-act="close-review">Close</button>
-      <span class="label">Review</span>
-      <span></span>
-    </div></div>
+  $('#s-review').innerHTML = `${topBar()}
     <div class="wrap">
+      <h1 class="screen-title">Review</h1>
       <div class="scope" role="group" aria-label="Words to review">
         <button class="text-btn" data-act="scope" data-s="notyet" aria-pressed="${scope === 'notyet'}">Not yet &middot; ${notyet}</button>
         <button class="text-btn" data-act="scope" data-s="all" aria-pressed="${scope === 'all'}">All &middot; ${words.length}</button>
@@ -897,30 +1583,191 @@ function renderReview() {
       <div class="progress"><i style="width:${pct}%"></i></div>
     </div>
     ${main}
-    <div class="review-bar"><div class="wrap">${bar}</div></div>`;
+    ${bar ? `<div class="review-actions"><div class="wrap">${bar}</div></div>` : ''}`;
 }
 
-/* ================= Views & history ================= */
-let view = 'list';
+/* ================= Tab bar: glass capsule with a lifting lens ================= */
+const TABS = ['review', 'add', 'list'];
+const pill = $('#pill');
+const tabbar = $('#tabbar');
+const INSET = 4; // gap between the pill and its tab cell
+const tabEl = n => tabbar.querySelector(`.tab[data-tab="${n}"]`);
+const pillX = n => tabEl(n).offsetLeft + INSET;
+const FLAT_SHADOW = '0 0 0 1px rgba(0,0,0,0), inset 0 1px 1px rgba(255,255,255,0), inset 0 -3px 8px rgba(0,0,0,0), 0 6px 18px rgba(0,0,0,0)';
+const LENS_SHADOW = '0 0 0 1px rgba(0,0,0,.38), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -3px 8px rgba(0,0,0,.2), 0 6px 18px rgba(0,0,0,.22)';
+
+function tbVars() {
+  const cs = getComputedStyle(document.documentElement);
+  const n = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return isFinite(v) ? v : d; };
+  return {
+    blur: n('--tb-blur', 16), rim: n('--tb-rim', .24), pill: n('--tb-pill', .16),
+    lensScale: n('--tb-lens-scale', 1.18), iconScale: n('--tb-icon-scale', 1.14),
+    move: n('--tb-move-ms', 170), lift: n('--tb-lift-ms', 110), hold: n('--tb-hold-ms', 70), settle: n('--tb-settle-ms', 240)
+  };
+}
+// Safari has had trouble with var() inside -webkit-backdrop-filter; write the literal value too
+function applyGlass() {
+  const v = tbVars();
+  const g = tabbar.querySelector('.tb-glass');
+  const f = `blur(${v.blur}px) saturate(170%)`;
+  g.style.webkitBackdropFilter = f; g.style.backdropFilter = f;
+}
+function setSelected(name) {
+  tabbar.querySelectorAll('.tab').forEach(t => {
+    const on = t.dataset.tab === name;
+    t.classList.toggle('selected', on);
+    if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+  });
+}
+function layoutPill() {
+  const t = tabEl('review');
+  pill.style.width = (t.offsetWidth - INSET * 2) + 'px';
+  pill.getAnimations().forEach(a => a.cancel());
+  tabbar.querySelectorAll('.tab-icon').forEach(i => i.getAnimations().forEach(a => a.cancel()));
+  pill.classList.remove('lens');
+  if (TABS.includes(current)) { pill.style.transform = `translateX(${pillX(current)}px)`; pill.style.opacity = '1'; }
+  else pill.style.opacity = '0';
+  setSelected(TABS.includes(current) ? current : null);
+}
+// run callbacks when an animation's clock passes given times (works when the animation is paused and seeked too)
+function atTimes(anim, marks) {
+  marks.sort((a, b) => a.t - b.t);
+  const tick = () => {
+    if (anim.playState === 'idle') return;
+    const ct = anim.currentTime || 0;
+    while (marks.length && ct >= marks[0].t) marks.shift().fn();
+    if (marks.length) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+function moveLens(from, to) {
+  const fromTab = TABS.includes(from) ? from : null;
+  const toTab = TABS.includes(to) ? to : null;
+  // start from wherever the pill is right now (a switch can interrupt another)
+  const m = new DOMMatrixReadOnly(getComputedStyle(pill).transform === 'none' ? undefined : getComputedStyle(pill).transform);
+  const curX = m.m41, curOpacity = parseFloat(getComputedStyle(pill).opacity);
+  pill.getAnimations().forEach(a => a.cancel());
+  tabbar.querySelectorAll('.tab-icon').forEach(i => i.getAnimations().forEach(a => a.cancel()));
+  pill.classList.remove('lens');
+
+  if (!toTab) { // back to Home: the pill simply fades away
+    setSelected(null);
+    pill.style.transform = `translateX(${curX}px)`;
+    const a = pill.animate([{ opacity: curOpacity }, { opacity: 0 }], { duration: reduced() ? 1 : 180, easing: 'ease-out' });
+    pill.style.opacity = '0';
+    return a;
+  }
+  const x1 = pillX(toTab);
+  if (reduced()) {
+    setSelected(toTab);
+    pill.style.transform = `translateX(${x1}px)`; pill.style.opacity = '1';
+    return null;
+  }
+  const v = tbVars();
+  const x0 = (fromTab || curOpacity > 0.01) ? curX : x1;
+  const startOpacity = fromTab ? Math.max(curOpacity, 0) : 0;
+  const S = v.lensScale;
+  const tMoveStart = v.lift * 0.5;             // the lens starts travelling while it is still lifting
+  const tArrive = tMoveStart + v.move;
+  const tHoldEnd = tArrive + v.hold;
+  const T = tHoldEnd + v.settle;
+  const flat = { backgroundColor: `rgba(255,255,255,${v.pill})`, borderColor: 'rgba(255,255,255,0)', boxShadow: FLAT_SHADOW };
+  const lens = { backgroundColor: 'rgba(255,255,255,0.07)', borderColor: `rgba(255,255,255,${Math.min(1, v.rim * 2.4)})`, boxShadow: LENS_SHADOW };
+  const tf = (x, s) => `translateX(${x}px) scale(${s})`;
+  const anim = pill.animate([
+    { offset: 0, transform: tf(x0, 1), opacity: startOpacity, ...flat, easing: 'cubic-bezier(.3,.7,.4,1)' },
+    { offset: tMoveStart / T, transform: tf(x0, 1 + (S - 1) * 0.75), opacity: 1, ...lens, easing: 'cubic-bezier(.2,.85,.25,1)' },
+    { offset: tArrive / T, transform: tf(x1, S), opacity: 1, ...lens, easing: 'linear' },
+    { offset: tHoldEnd / T, transform: tf(x1, S), opacity: 1, ...lens, easing: 'cubic-bezier(.4,0,.2,1)' },
+    { offset: 1, transform: tf(x1, 1), opacity: 1, ...flat }
+  ], { duration: T });
+  pill.style.transform = tf(x1, 1); pill.style.opacity = '1';
+  pill.classList.add('lens');
+
+  const Si = v.iconScale;
+  const toIcon = tabEl(toTab).querySelector('.tab-icon');
+  toIcon.animate([
+    { offset: 0, transform: 'scale(1)' },
+    { offset: (tMoveStart + v.move * 0.45) / T, transform: 'scale(1)', easing: 'cubic-bezier(.2,.8,.3,1)' },
+    { offset: tArrive / T, transform: `scale(${Si})` },
+    { offset: tHoldEnd / T, transform: `scale(${Si})`, easing: 'cubic-bezier(.4,0,.2,1)' },
+    { offset: 1, transform: 'scale(1)' }
+  ], { duration: T });
+  if (fromTab && fromTab !== toTab) {
+    tabEl(fromTab).querySelector('.tab-icon').animate([
+      { offset: 0, transform: 'scale(1)', easing: 'cubic-bezier(.2,.8,.3,1)' },
+      { offset: tMoveStart / T, transform: `scale(${Si})`, easing: 'ease-in' },
+      { offset: (tMoveStart + v.move * 0.5) / T, transform: 'scale(1)' },
+      { offset: 1, transform: 'scale(1)' }
+    ], { duration: T });
+  }
+  atTimes(anim, [
+    { t: tMoveStart + v.move * 0.55, fn: () => setSelected(toTab) },
+    { t: tHoldEnd + v.settle * 0.5, fn: () => pill.classList.remove('lens') }
+  ]);
+  anim.onfinish = () => pill.classList.remove('lens');
+  return anim;
+}
+
+/* ================= Screens ================= */
+let current = 'home';
+const screenEl = n => $('#s-' + n);
+function renderScreen(n) {
+  if (n === 'home') renderHome();
+  else if (n === 'review') { enterReview(); renderReview(); }
+  else if (n === 'add') renderAdd();
+  else if (n === 'list') renderList();
+}
+function crossfade(a, b) {
+  const d = reduced() ? 1 : 260;
+  a.getAnimations().forEach(x => x.cancel());
+  b.getAnimations().forEach(x => x.cancel());
+  b.hidden = false;
+  b.style.zIndex = '2'; a.style.zIndex = '1';
+  b.animate([{ opacity: 0 }, { opacity: 1 }], { duration: d, easing: 'ease-out' });
+  const out = a.animate([{ opacity: 1 }, { opacity: 0 }], { duration: d * 0.85, easing: 'ease-in', fill: 'forwards' });
+  out.onfinish = () => {
+    if (current !== a.dataset.screen) a.hidden = true;
+    out.cancel();
+    a.style.zIndex = ''; b.style.zIndex = '';
+  };
+}
+function go(name) {
+  if (name === current) {
+    const el = screenEl(name);
+    if (el.scrollTop > 0) el.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' });
+    return;
+  }
+  clearToast();
+  const from = current;
+  current = name;
+  renderScreen(name);
+  crossfade(screenEl(from), screenEl(name));
+  moveLens(from, name);
+  if (name === 'add' && !words.length) setTimeout(() => { const i = $('#add-word'); if (i) i.focus(); }, 300);
+}
+function rerenderCurrent() {
+  renderScreen(current);
+}
+
+/* ================= Overlay history ================= */
+let overlay = null;
 function pushView(v) {
-  view = v;
-  const t = $('.toast'); if (t) t.remove(); // a message from the list must not follow into another screen
+  overlay = v;
+  clearToast();
   try { history.pushState({ view: v }, ''); } catch (e) {}
-  document.documentElement.style.overflow = 'hidden';
 }
 function closeView() {
-  if (history.state && history.state.view && history.state.view !== 'list') history.back();
+  if (history.state && history.state.view) history.back();
   else teardown();
 }
 function teardown() {
-  view = 'list';
+  overlay = null;
   editingId = null;
-  if (Speech.ok && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
   $('#layer').innerHTML = '';
-  document.documentElement.style.overflow = '';
-  renderList();
+  rerenderCurrent();
 }
-window.addEventListener('popstate', () => { if (view !== 'list') teardown(); });
+window.addEventListener('popstate', () => { if (overlay) teardown(); });
 
 /* ================= Actions ================= */
 async function confirmDelete(id) {
@@ -935,19 +1782,18 @@ async function confirmDelete(id) {
   if (!ok) return;
   words = words.filter(x => x.id !== id);
   open.delete(id);
+  if (addedId === id) addedId = null;
   save();
-  if (view === 'form') closeView(); else renderList();
+  if (overlay === 'form') closeView(); else rerenderCurrent();
   toast(`Deleted “${w.word}”.`);
 }
 
 function exportJSON() {
-  const payload = { app: 'wordbook', version: 1, exportedAt: new Date().toISOString(), count: words.length, words };
+  const payload = { app: 'wordbook', version: 1, exportedAt: new Date().toISOString(), count: words.length, words, days: [...days].sort() };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const d = new Date();
-  const stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  a.href = url; a.download = `wordbook-${stamp}.json`;
+  a.href = url; a.download = `wordbook-${dayKey(new Date())}.json`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
   toast(`Exported ${plural(words.length, 'word', 'words')}.`);
@@ -983,76 +1829,91 @@ async function importFile(file) {
   } else {
     words = incoming;
   }
+  // review days travel with the file (older exports have none); they are only ever added
+  if (data && Array.isArray(data.days)) {
+    data.days.forEach(d => { if (typeof d === 'string' && DAY_RE.test(d)) days.add(d); });
+    saveDays();
+  }
   open.clear();
   save();
-  renderList();
+  rerenderCurrent();
   toast(`Imported ${plural(incoming.length, 'word', 'words')}.`);
 }
 
 document.addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (tab) { go(tab.dataset.tab); return; }
   const b = e.target.closest('[data-act]');
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   const li = b.closest('.entry');
   const id = li ? li.dataset.id : editingId;
   switch (act) {
+    case 'home': go('home'); break;
     case 'speak': Speech.speak(b.dataset.text, b); break;
+    case 'cal': calMonth = (() => { const d = new Date(calMonth.y, calMonth.m + Number(b.dataset.d), 1); return { y: d.getFullYear(), m: d.getMonth() }; })(); renderHome(); break;
+    case 'cal-today': calMonth = null; renderHome(); break;
     case 'filter': filter = b.dataset.f; renderList(); break;
-    case 'clear': query = ''; renderList(); const q = $('#q'); if (q) q.focus(); break;
+    case 'clear': { query = ''; renderList(); const q = $('#q'); if (q) q.focus(); break; }
     case 'toggle': open.has(id) ? open.delete(id) : open.add(id); renderResults(); break;
-    case 'learn': {
-      const w = byId(id); w.learned = !w.learned; w.updatedAt = Date.now(); save();
-      const y = window.scrollY; renderList(); window.scrollTo(0, y); break;
-    }
-    case 'add': openForm(null); break;
+    case 'learn': { const w = byId(id); w.learned = !w.learned; w.updatedAt = Date.now(); save(); renderList(); break; }
     case 'edit': openForm(id); break;
     case 'delete': confirmDelete(id); break;
     case 'cancel': closeView(); break;
     case 'save': saveForm(); break;
-    case 'pos': {
-      const input = $('#pos');
+    case 'pos': { const input = $('#pos'); input.value = b.getAttribute('aria-pressed') === 'true' ? '' : b.dataset.pos; syncChips($('#form-view'), input.value); break; }
+    case 'add-pos': {
+      const box = $('#added'); const input = box.querySelector('[data-field="pos"]');
       input.value = b.getAttribute('aria-pressed') === 'true' ? '' : b.dataset.pos;
-      syncChips(); break;
+      syncChips(box, input.value); queueSave('pos', input.value); break;
+    }
+    case 'retry': if (addedId) { addedRetry = false; queueLookup(addedId); } break;
+    case 'use-lemma': {
+      const w = byId(addedId);
+      if (w && addedLemma && !words.some(x => x.id !== w.id && x.word.toLowerCase() === addedLemma.toLowerCase())) {
+        w.word = addedLemma; w.updatedAt = Date.now(); save();
+        addedStatus = `Saved as “${addedLemma}”.`; addedLemma = null; renderAdded();
+      }
+      break;
     }
     case 'form-learned': b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); break;
-    case 'review': openReview(); break;
-    case 'reveal': revealed = true; renderReview(); break;
-    case 'next': pos++; revealed = false; renderReview(); break;
+    case 'reveal': revealed = true; markToday(); renderReview(); break;
     case 'grade': {
       const w = byId(deck[pos]);
-      if (w) {
-        const v = b.dataset.v === 'learned';
-        if (w.learned !== v) { w.learned = v; w.updatedAt = Date.now(); save(); }
-      }
+      if (w) { const v = b.dataset.v === 'learned'; if (w.learned !== v) { w.learned = v; w.updatedAt = Date.now(); save(); } }
       pos++; revealed = false; renderReview(); break;
     }
     case 'again': buildDeck(); renderReview(); break;
     case 'scope': scope = b.dataset.s; buildDeck(); renderReview(); break;
-    case 'close-review': closeView(); break;
     case 'export': exportJSON(); break;
     case 'import': $('#file').value = ''; $('#file').click(); break;
   }
 });
-document.addEventListener('input', e => {
-  if (e.target.id === 'q') { query = e.target.value; renderResults(); }
-});
+document.addEventListener('input', e => { if (e.target.id === 'q') { query = e.target.value; renderResults(); } });
 $('#file').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) importFile(f); });
 document.addEventListener('keydown', e => {
-  if (view !== 'review' || e.target.tagName === 'INPUT' || $('.scrim')) return;
-  if (e.key === 'Escape') closeView();
-  if (e.key === ' ' || e.key === 'Enter') {
-    const b = $('[data-act="reveal"]');
-    if (b) { e.preventDefault(); b.click(); }
-  }
+  if (current !== 'review' || overlay || $('.scrim') || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.key === ' ' || e.key === 'Enter') { const b = $('[data-act="reveal"]'); if (b) { e.preventDefault(); b.click(); } }
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
     const b = $(`[data-act="grade"][data-v="${e.key === 'ArrowRight' ? 'learned' : 'notyet'}"]`);
     if (b) { e.preventDefault(); b.click(); }
   }
 });
-window.addEventListener('storage', e => { if (e.key === KEY) { words = load(); if (view === 'list') renderList(); } });
+window.addEventListener('storage', e => {
+  if (e.key === KEY) words = load();
+  if (e.key === DAYS_KEY) days = loadDays();
+  if (e.key === KEY || e.key === DAYS_KEY) rerenderCurrent();
+});
+// the app can stay open across midnight: refresh the streak when it comes back
+document.addEventListener('visibilitychange', () => { if (!document.hidden && current === 'home' && !overlay) renderHome(); });
+window.addEventListener('resize', layoutPill);
 
-try { history.replaceState({ view: 'list' }, ''); } catch (e) {}
-renderList();
+try { history.replaceState({}, ''); } catch (e) {}
+words = load();
+days = loadDays();
+applyGlass();
+renderHome();
+layoutPill();
 
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tab Bar Lab</title>
+<meta name="theme-color" content="#f4f1ea">
+<style>
+/* Same variable names as index.html. "Copy values" gives a block to paste into its :root. */
+:root {
+  --paper: #f4f1ea; --ink: #1d1b18; --ink-2: #57524a; --ink-3: #8c8578; --rule: #d6d0c3;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+  --tb-blur: 16px;
+  --tb-tint: 0.8;
+  --tb-move-ms: 170;
+  --tb-lens-scale: 1.18;
+  --tb-rim: 0.24;
+  --tb-icon-scale: 1.14;
+  --tb-pill: 0.16;
+  --tb-lift-ms: 110;
+  --tb-hold-ms: 70;
+  --tb-settle-ms: 240;
+  --bar-h: 60px;
+  --bar-bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) - 12px));
+  --bar-side: 5.6vw;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 14px; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+
+/* controls on top, a scrolling backdrop underneath the bar */
+.panel { position: fixed; top: 0; left: 0; right: 0; z-index: 20; background: var(--paper); border-bottom: 1px solid var(--rule); padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px; max-height: 58vh; overflow-y: auto; }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.panel h1 { font-size: 17px; margin: 0; letter-spacing: -.01em; }
+.line { display: flex; align-items: center; gap: 10px; min-height: 36px; }
+.line .k { width: 5.2em; flex: none; font-size: 12px; font-weight: 600; }
+.panel p { margin: 4px 0 6px; color: var(--ink-3); font-size: 12px; }
+.row { display: grid; grid-template-columns: 7.5em 1fr 4.2em; align-items: center; gap: 10px; min-height: 32px; }
+.row label { font-size: 12px; font-weight: 600; }
+.row output { font-variant-numeric: tabular-nums; text-align: right; font-size: 12px; color: var(--ink-2); }
+.row input[type=range] { width: 100%; accent-color: var(--ink); height: 28px; }
+.sub { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--rule); }
+.sub summary { font-size: 12px; font-weight: 600; color: var(--ink-2); min-height: 32px; display: flex; align-items: center; cursor: pointer; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.btn { min-height: 40px; padding: 0 14px; border: 1px solid var(--ink); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.btn.solid { background: var(--ink); color: var(--paper); }
+.seg { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; }
+.seg button { flex: none; min-height: 32px; padding: 0 10px; border: 1px solid var(--rule); border-radius: 16px; font-size: 12px; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.copied { font-size: 12px; color: var(--ink-2); align-self: center; }
+
+.stage { position: fixed; inset: 0; overflow-y: auto; padding: 60vh 24px 140px; }
+.stage.paper .item { border-bottom: 1px solid var(--rule); padding: 14px 0; }
+.stage.paper .w { font-size: 20px; font-weight: 600; } .stage.paper .m { color: var(--ink-2); }
+.stage.color { background: #0f0f10; }
+.stage.color .item { height: 90px; margin-bottom: 8px; border-radius: 6px; color: #fff; font-weight: 700; font-size: 22px; padding: 12px; }
+.stage.dark { background: #111; color: #eee; }
+.stage.dark .item { border-bottom: 1px solid #333; padding: 14px 0; } .stage.dark .m { color: #999; }
+
+/* ---- tab bar (identical to index.html) ---- */
+.tabbar { position: fixed; z-index: 30; left: var(--bar-side); right: var(--bar-side); bottom: var(--bar-bottom); max-width: 420px; margin: 0 auto; height: var(--bar-h); border-radius: 999px; display: grid; grid-template-columns: repeat(3, 1fr); padding: 0 4px; }
+.tb-glass { position: absolute; inset: 0; border-radius: inherit; background: rgba(24, 23, 21, var(--tb-tint)); -webkit-backdrop-filter: blur(var(--tb-blur)) saturate(170%); backdrop-filter: blur(var(--tb-blur)) saturate(170%); border: 1px solid rgba(255, 255, 255, var(--tb-rim)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, calc(var(--tb-rim) * .7)), 0 10px 30px rgba(29, 27, 24, .16); }
+.tb-pill { position: absolute; left: 0; top: 4px; bottom: 4px; border-radius: 999px; background: rgba(255, 255, 255, var(--tb-pill)); border: 1px solid transparent; opacity: 0; pointer-events: none; will-change: transform; }
+.tb-pill.lens { -webkit-backdrop-filter: brightness(1.28) saturate(1.3); backdrop-filter: brightness(1.28) saturate(1.3); }
+.tab { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: rgba(255, 255, 255, .74); transition: color .18s; }
+.tab.selected { color: #fff; }
+.tab-icon { display: block; width: 26px; height: 26px; will-change: transform; }
+.tab-icon svg { display: block; }
+.tab-label { font-size: 10.5px; font-weight: 600; letter-spacing: .01em; line-height: 1.2; }
+</style>
+</head>
+<body>
+
+<div class="stage paper" id="stage"></div>
+
+<section class="panel" aria-label="Controls">
+  <div class="head"><h1>Tab Bar Lab</h1><button class="btn solid" id="copy">Copy values</button></div>
+  <p>Move the sliders, tap the tabs (or Replay), then Copy values and send them back.</p>
+  <div id="main-sliders"></div>
+  <details class="sub"><summary>More knobs</summary><div id="more-sliders"></div></details>
+  <div class="line"><span class="k">Playback</span><div class="seg" id="speed"></div><output id="speed-out" hidden>1x</output></div>
+  <div class="line"><span class="k">Behind</span><div class="seg" id="bg"></div></div>
+  <div class="btns">
+    <button class="btn" id="replay">Replay</button>
+    <button class="btn" id="auto" aria-pressed="false">Auto-cycle</button>
+    <button class="btn" id="reset">Reset</button>
+    <span class="copied" id="copied" role="status"></span>
+  </div>
+</section>
+
+<nav class="tabbar" id="tabbar" aria-label="Main">
+  <div class="tb-glass"></div>
+  <div class="tb-pill" id="pill"></div>
+  <button class="tab" data-tab="review"><span class="tab-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="8" y="2.6" width="12.6" height="15.4" rx="2.6" opacity=".45"/><rect x="3.4" y="6" width="12.6" height="15.4" rx="2.6"/></svg></span><span class="tab-label">Review</span></button>
+  <button class="tab" data-tab="add"><span class="tab-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20a10 10 0 0 1 0-20Zm-1.05 5.4v3.55H7.4v2.1h3.55v3.55h2.1v-3.55h3.55v-2.1h-3.55V7.4h-2.1Z"/></svg></span><span class="tab-label">Add</span></button>
+  <button class="tab" data-tab="list"><span class="tab-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="4.6" cy="6" r="1.9"/><rect x="8.2" y="4.5" width="13" height="3" rx="1.5"/><circle cx="4.6" cy="12" r="1.9"/><rect x="8.2" y="10.5" width="13" height="3" rx="1.5"/><circle cx="4.6" cy="18" r="1.9"/><rect x="8.2" y="16.5" width="13" height="3" rx="1.5"/></svg></span><span class="tab-label">List</span></button>
+</nav>
+
+<script>
+(function () {
+'use strict';
+const $ = s => document.querySelector(s);
+const root = document.documentElement;
+
+// ---- knobs: [css var, label, min, max, step, unit]
+const MAIN = [
+  ['--tb-blur', 'Blur', 0, 40, 1, 'px'],
+  ['--tb-tint', 'Darkness', 0, 1, 0.01, ''],
+  ['--tb-move-ms', 'Lens travel', 60, 500, 5, 'ms'],
+  ['--tb-lens-scale', 'Lens size', 1, 1.5, 0.01, 'x'],
+  ['--tb-rim', 'Rim brightness', 0, 0.8, 0.01, '']
+];
+const MORE = [
+  ['--tb-icon-scale', 'Icon swell', 1, 1.5, 0.01, 'x'],
+  ['--tb-pill', 'Pill fill', 0, 0.5, 0.01, ''],
+  ['--tb-lift-ms', 'Lift', 20, 400, 5, 'ms'],
+  ['--tb-hold-ms', 'Hold', 0, 400, 5, 'ms'],
+  ['--tb-settle-ms', 'Settle', 40, 600, 5, 'ms']
+];
+const ALL = [...MAIN, ...MORE];
+const DEFAULTS = {};
+ALL.forEach(([k]) => { DEFAULTS[k] = parseFloat(getComputedStyle(root).getPropertyValue(k)); });
+
+function sliderHTML([k, label, min, max, step, unit]) {
+  return `<div class="row"><label for="${k}">${label}</label>
+    <input type="range" id="${k}" min="${min}" max="${max}" step="${step}" value="${DEFAULTS[k]}">
+    <output id="${k}-o">${DEFAULTS[k]}${unit}</output></div>`;
+}
+$('#main-sliders').innerHTML = MAIN.map(sliderHTML).join('');
+$('#more-sliders').innerHTML = MORE.map(sliderHTML).join('');
+function setVar([k, , , , , unit], v) {
+  root.style.setProperty(k, k === '--tb-blur' ? v + 'px' : String(v));
+  document.getElementById(k + '-o').textContent = v + unit;
+}
+ALL.forEach(def => {
+  const el = document.getElementById(def[0]);
+  el.addEventListener('input', () => { setVar(def, el.value); if (def[0] === '--tb-blur') applyGlass(); });
+});
+
+// ---- playback speed and backdrop
+let speed = 1;
+$('#speed').innerHTML = [1, 0.5, 0.25, 0.1].map(s => `<button data-s="${s}" aria-pressed="${s === 1}">${s === 1 ? 'Real' : s + 'x'}</button>`).join('');
+$('#speed').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  speed = Number(b.dataset.s);
+  $('#speed').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  $('#speed-out').textContent = speed + 'x';
+});
+const BG = { paper: 'Paper', color: 'Color', dark: 'Dark' };
+$('#bg').innerHTML = Object.entries(BG).map(([k, v]) => `<button data-b="${k}" aria-pressed="${k === 'paper'}">${v}</button>`).join('');
+const WORDS = [['threshold', '敷居、閾値'], ['mitigate', '和らげる、軽減する'], ['ephemeral', 'はかない'], ['ubiquitous', 'どこにでもある'], ['serendipity', '思いがけない幸運な発見'], ['resilience', '回復力、しなやかさ']];
+const COLORS = ['#c0392b', '#2e86de', '#27ae60', '#f1c40f', '#8e44ad', '#e67e22', '#16a085', '#d35400'];
+function fillStage(kind) {
+  const s = $('#stage');
+  s.className = 'stage ' + kind;
+  let html = '';
+  for (let i = 0; i < 24; i++) {
+    if (kind === 'color') html += `<div class="item" style="background:${COLORS[i % COLORS.length]}">Block ${i + 1}</div>`;
+    else { const w = WORDS[i % WORDS.length]; html += `<div class="item"><div class="w">${w[0]}</div><div class="m">${w[1]}</div></div>`; }
+  }
+  s.innerHTML = html;
+}
+$('#bg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  $('#bg').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  fillStage(b.dataset.b);
+});
+fillStage('paper');
+
+// ---- tab bar logic (same as index.html; durations divided by the playback speed)
+const TABS = ['review', 'add', 'list'];
+const pill = $('#pill'), tabbar = $('#tabbar');
+const INSET = 4;
+const tabEl = n => tabbar.querySelector(`.tab[data-tab="${n}"]`);
+const pillX = n => tabEl(n).offsetLeft + INSET;
+const FLAT_SHADOW = '0 0 0 1px rgba(0,0,0,0), inset 0 1px 1px rgba(255,255,255,0), inset 0 -3px 8px rgba(0,0,0,0), 0 6px 18px rgba(0,0,0,0)';
+const LENS_SHADOW = '0 0 0 1px rgba(0,0,0,.38), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -3px 8px rgba(0,0,0,.2), 0 6px 18px rgba(0,0,0,.22)';
+let current = 'review';
+function tbVars() {
+  const cs = getComputedStyle(root);
+  const n = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return isFinite(v) ? v : d; };
+  return {
+    blur: n('--tb-blur', 16), rim: n('--tb-rim', .24), pill: n('--tb-pill', .16),
+    lensScale: n('--tb-lens-scale', 1.18), iconScale: n('--tb-icon-scale', 1.14),
+    move: n('--tb-move-ms', 170) / speed, lift: n('--tb-lift-ms', 110) / speed, hold: n('--tb-hold-ms', 70) / speed, settle: n('--tb-settle-ms', 240) / speed
+  };
+}
+function applyGlass() {
+  const v = tbVars(); const g = tabbar.querySelector('.tb-glass');
+  const f = `blur(${v.blur}px) saturate(170%)`; g.style.webkitBackdropFilter = f; g.style.backdropFilter = f;
+}
+function setSelected(name) { tabbar.querySelectorAll('.tab').forEach(t => t.classList.toggle('selected', t.dataset.tab === name)); }
+function layoutPill() {
+  pill.style.width = (tabEl('review').offsetWidth - INSET * 2) + 'px';
+  pill.getAnimations().forEach(a => a.cancel());
+  pill.style.transform = `translateX(${pillX(current)}px)`; pill.style.opacity = '1';
+  setSelected(current);
+}
+function atTimes(anim, marks) {
+  marks.sort((a, b) => a.t - b.t);
+  const tick = () => { if (anim.playState === 'idle') return; const ct = anim.currentTime || 0; while (marks.length && ct >= marks[0].t) marks.shift().fn(); if (marks.length) requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+}
+function moveLens(from, to) {
+  const m = new DOMMatrixReadOnly(getComputedStyle(pill).transform === 'none' ? undefined : getComputedStyle(pill).transform);
+  const curX = m.m41;
+  pill.getAnimations().forEach(a => a.cancel());
+  tabbar.querySelectorAll('.tab-icon').forEach(i => i.getAnimations().forEach(a => a.cancel()));
+  pill.classList.remove('lens');
+  const v = tbVars();
+  const x0 = curX, x1 = pillX(to), S = v.lensScale;
+  const tMoveStart = v.lift * 0.5, tArrive = tMoveStart + v.move, tHoldEnd = tArrive + v.hold, T = tHoldEnd + v.settle;
+  const flat = { backgroundColor: `rgba(255,255,255,${v.pill})`, borderColor: 'rgba(255,255,255,0)', boxShadow: FLAT_SHADOW };
+  const lens = { backgroundColor: 'rgba(255,255,255,0.07)', borderColor: `rgba(255,255,255,${Math.min(1, v.rim * 2.4)})`, boxShadow: LENS_SHADOW };
+  const tf = (x, s) => `translateX(${x}px) scale(${s})`;
+  const anim = pill.animate([
+    { offset: 0, transform: tf(x0, 1), opacity: 1, ...flat, easing: 'cubic-bezier(.3,.7,.4,1)' },
+    { offset: tMoveStart / T, transform: tf(x0, 1 + (S - 1) * 0.75), opacity: 1, ...lens, easing: 'cubic-bezier(.2,.85,.25,1)' },
+    { offset: tArrive / T, transform: tf(x1, S), opacity: 1, ...lens, easing: 'linear' },
+    { offset: tHoldEnd / T, transform: tf(x1, S), opacity: 1, ...lens, easing: 'cubic-bezier(.4,0,.2,1)' },
+    { offset: 1, transform: tf(x1, 1), opacity: 1, ...flat }
+  ], { duration: T });
+  pill.style.transform = tf(x1, 1); pill.style.opacity = '1';
+  pill.classList.add('lens');
+  const Si = v.iconScale;
+  tabEl(to).querySelector('.tab-icon').animate([
+    { offset: 0, transform: 'scale(1)' },
+    { offset: (tMoveStart + v.move * 0.45) / T, transform: 'scale(1)', easing: 'cubic-bezier(.2,.8,.3,1)' },
+    { offset: tArrive / T, transform: `scale(${Si})` },
+    { offset: tHoldEnd / T, transform: `scale(${Si})`, easing: 'cubic-bezier(.4,0,.2,1)' },
+    { offset: 1, transform: 'scale(1)' }
+  ], { duration: T });
+  if (from !== to) tabEl(from).querySelector('.tab-icon').animate([
+    { offset: 0, transform: 'scale(1)', easing: 'cubic-bezier(.2,.8,.3,1)' },
+    { offset: tMoveStart / T, transform: `scale(${Si})`, easing: 'ease-in' },
+    { offset: (tMoveStart + v.move * 0.5) / T, transform: 'scale(1)' },
+    { offset: 1, transform: 'scale(1)' }
+  ], { duration: T });
+  atTimes(anim, [
+    { t: tMoveStart + v.move * 0.55, fn: () => setSelected(to) },
+    { t: tHoldEnd + v.settle * 0.5, fn: () => pill.classList.remove('lens') }
+  ]);
+  anim.onfinish = () => pill.classList.remove('lens');
+}
+function go(to) { const from = current; current = to; moveLens(from, to); }
+
+tabbar.addEventListener('click', e => { const t = e.target.closest('.tab'); if (t) go(t.dataset.tab); });
+$('#replay').addEventListener('click', () => { const i = TABS.indexOf(current); go(TABS[(i + 1) % TABS.length]); });
+let autoTimer = null;
+$('#auto').addEventListener('click', e => {
+  const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.classList.toggle('solid', on);
+  clearInterval(autoTimer);
+  if (on) autoTimer = setInterval(() => $('#replay').click(), 1400);
+});
+$('#reset').addEventListener('click', () => {
+  ALL.forEach(def => { document.getElementById(def[0]).value = DEFAULTS[def[0]]; setVar(def, DEFAULTS[def[0]]); });
+  applyGlass();
+});
+function valuesText() {
+  return ALL.map(([k, , , , , unit]) => {
+    const v = document.getElementById(k).value;
+    return `  ${k}: ${k === '--tb-blur' ? v + 'px' : v};`;
+  }).join('\n');
+}
+$('#copy').addEventListener('click', async () => {
+  const text = valuesText();
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+    ta.remove();
+  }
+  $('#copied').textContent = ok ? 'Copied.' : 'Copy failed. Values are shown below.';
+  if (!ok) { let pre = $('#vals'); if (!pre) { pre = document.createElement('pre'); pre.id = 'vals'; pre.style.cssText = 'font-size:11px;white-space:pre-wrap;user-select:all'; $('.panel').appendChild(pre); } pre.textContent = text; }
+});
+window.__labValues = valuesText; // for automated checks
+window.addEventListener('resize', layoutPill);
+applyGlass();
+layoutPill();
+})();
+</script>
+</body>
+</html>
