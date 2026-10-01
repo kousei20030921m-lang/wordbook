@@ -12,7 +12,7 @@
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
   --rv-flip-ms: 200;
   --rv-tilt: 4;
-  --rv-scale: 1.1;
+  --rv-scale: 0.86;
   --rv-in-ms: 100;
   --rv-hold-ms: 300;
   --rv-out-ms: 240;
@@ -64,7 +64,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .judge { height: 58px; border-radius: 29px; border: 1.5px solid var(--rule); background: #fff; display: grid; place-items: center; }
 .judge.miss { color: #b3412e; } .judge.got { color: #2e7d4f; }
 .rv-ov { position: absolute; z-index: 3; border-radius: var(--rv-radius); display: grid; place-items: center; pointer-events: none; opacity: 0; }
-.rv-ov span { font-size: 40px; font-weight: 700; letter-spacing: -.02em; }
+.rv-ov span { font-size: 28px; font-weight: 700; letter-spacing: -.01em; }
 .rv-ov.got { background: #d6ecdd; border: 2px solid #9ccfad; color: #2e7d4f; }
 .rv-ov.miss { background: #f7ddd6; border: 2px solid #e8a999; color: #b3412e; }
 </style>
@@ -96,7 +96,7 @@ const root = document.documentElement;
 const KNOBS = [
   ['--rv-flip-ms', 'Flip time', 60, 600, 10, 'ms'],
   ['--rv-tilt', 'Stamp tilt', 0, 15, 0.5, '°'],
-  ['--rv-scale', 'Stamp size', 1, 1.3, 0.01, 'x'],
+  ['--rv-scale', 'Stamp size', 0.7, 1, 0.01, 'x'],
   ['--rv-in-ms', 'Stamp fade-in', 20, 400, 10, 'ms'],
   ['--rv-hold-ms', 'Stamp hold', 0, 1000, 10, 'ms'],
   ['--rv-out-ms', 'Stamp exit', 60, 700, 10, 'ms'],
@@ -142,12 +142,19 @@ function judge(val) {
   stage.appendChild(ov);
   const tilt = v('--rv-tilt', 4) * (got ? 1 : -1), sc = v('--rv-scale', 1.1);
   const tin = ms('--rv-in-ms', 100), hold = ms('--rv-hold-ms', 300), tout = ms('--rv-out-ms', 240);
-  const drop = v('--rv-drop', 90), outSc = v('--rv-out-scale', 0.55), T = tin + hold + tout;
+  // same fit as index.html: the tilted stamp never leaves the card
+  const th = Math.abs(tilt) * Math.PI / 180, W = r.width, H = r.height;
+  const bw = W * Math.cos(th) + H * Math.sin(th), bh = H * Math.cos(th) + W * Math.sin(th);
+  const sFit = Math.min(sc, Math.min(W / bw, H / bh) * 0.98);
+  const outSc = Math.min(v('--rv-out-scale', 0.55), sFit);
+  const drop = Math.min(v('--rv-drop', 90), Math.max(0, (H - outSc * bh) / 2 - 2));
+  const dx = Math.min(18, Math.max(0, (W - outSc * bw) / 2 - 2));
+  const T = tin + hold + tout;
   const an = ov.animate([
-    { offset: 0, opacity: 0, transform: 'rotate(0deg) scale(1)', easing: 'ease-out' },
-    { offset: tin / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sc})` },
-    { offset: (tin + hold) / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sc})`, easing: 'cubic-bezier(.55,0,1,.45)' },
-    { offset: 1, opacity: 0, transform: `translate(${got ? 18 : -18}px, ${drop}px) rotate(${tilt}deg) scale(${outSc})` }
+    { offset: 0, opacity: 0, transform: `rotate(0deg) scale(${sFit})`, easing: 'ease-out' },
+    { offset: tin / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sFit})` },
+    { offset: (tin + hold) / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sFit})`, easing: 'cubic-bezier(.55,0,1,.45)' },
+    { offset: 1, opacity: 0, transform: `translate(${got ? dx : -dx}px, ${drop}px) rotate(${tilt}deg) scale(${outSc})` }
   ], { duration: T });
   an.onfinish = an.oncancel = () => ov.remove();
   R.i++; R.back = false; R.busy = false; render();

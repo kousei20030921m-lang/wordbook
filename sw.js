@@ -1,6 +1,6 @@
 // Wordbook service worker: keeps the app shell cached so it opens offline.
 // Bump VERSION whenever index.html or an asset changes, so phones pick up the update.
-const VERSION = 'wordbook-v4';
+const VERSION = 'wordbook-v5';
 const SHELL = [
   './',
   './index.html',

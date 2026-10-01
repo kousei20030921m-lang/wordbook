@@ -50,7 +50,7 @@
   /* ---- review card: knobs tuned in review-lab.html ---- */
   --rv-flip-ms: 200;       /* whole flip: old face narrows to the centre, new face widens */
   --rv-tilt: 4;            /* degrees the Got it / Not yet stamp leans (Got it clockwise) */
-  --rv-scale: 1.1;         /* stamp size relative to the card */
+  --rv-scale: 0.86;        /* stamp size relative to the card (0.7-1.0; never drawn outside the card) */
   --rv-in-ms: 100;         /* stamp fade-in */
   --rv-hold-ms: 300;       /* stamp stays still */
   --rv-out-ms: 240;        /* stamp drops away */
@@ -320,8 +320,39 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
 .ent-ex { display: grid; grid-template-columns: 1fr 36px; align-items: start; gap: 4px; margin-top: 6px; }
 .ent-ex p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-2); padding-left: 10px; border-left: 2px solid var(--rule); }
 .note-fld { display: block; margin-top: 18px; }
-.note-fld textarea { display: block; width: 100%; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; background: transparent; font-size: 16px; line-height: 1.5; padding: 6px 0; outline: none; resize: vertical; }
-.note-fld textarea:focus { border-bottom-color: var(--ink); }
+/* note: one line to start, grows with the text, never scrolls inside (no half-hidden lines) */
+textarea.note-input {
+  display: block; width: 100%;
+  min-height: calc(1.6em + 18px);
+  border: 0; border-bottom: 1px solid var(--rule); border-radius: 0;
+  background: transparent; color: var(--ink);
+  font: inherit; font-size: 16px; line-height: 1.6;
+  padding: 9px 0;
+  outline: none; resize: none; overflow: hidden;
+  white-space: pre-wrap; word-break: break-word;
+}
+textarea.note-input:focus { border-bottom-color: var(--ink); }
+.note-fld .label { display: block; margin-bottom: 2px; }
+.recent-item.first .note-input { margin-top: 14px; }
+.nohit-actions, .manual-actions { display: flex; align-items: center; gap: 24px; }
+.manual-actions .btn { flex: 1; }
+
+/* pronunciation: small, grey, beside the word */
+.ipa { font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--ink-3); margin-left: 8px; white-space: nowrap; }
+.recent-head .ipa { margin-right: auto; align-self: center; }
+.recent-word { flex: none; max-width: 70%; }
+.rv-ipa { color: rgba(255, 255, 255, .55); font-size: 17px; margin: 10px 0 0; letter-spacing: 0; }
+.rv-back-word .ipa { font-size: 14px; }
+
+/* the note on the answer side of a card */
+.rv-note { margin: 6px 0 10px; padding: 8px 12px; background: #f6f3ec; border-radius: 12px; max-height: 6.4em; overflow-y: auto; flex: none; }
+.rv-note-k { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.rv-note p { margin: 2px 0 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; }
+
+/* typing: the tab bar steps aside so the keyboard area is free; extra room to scroll a field to the middle */
+.tabbar { transition: opacity .18s ease, transform .18s ease; }
+body.kbd .tabbar { opacity: 0; transform: translateY(24px); pointer-events: none; }
+body.kbd .screen { padding-bottom: 60vh; }
 .voice { margin-top: 40px; padding-top: 12px; border-top: 1px solid var(--rule); }
 .voice-row { display: flex; align-items: center; gap: 18px; margin-top: 8px; }
 .voice select { flex: 1; min-width: 0; min-height: 40px; font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: transparent; color: var(--ink); }
@@ -357,7 +388,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
 .judge.miss { color: #b3412e; } .judge.got { color: #2e7d4f; }
 .judge:active { transform: scale(.96); }
 .rv-ov { position: absolute; z-index: 3; border-radius: var(--rv-radius); display: grid; place-items: center; pointer-events: none; opacity: 0; }
-.rv-ov span { font-size: 40px; font-weight: 700; letter-spacing: -.02em; }
+.rv-ov span { font-size: 28px; font-weight: 700; letter-spacing: -.01em; }
 .rv-ov.got { background: #d6ecdd; border: 2px solid #9ccfad; color: #2e7d4f; }
 .rv-ov.miss { background: #f7ddd6; border: 2px solid #e8a999; color: #b3412e; }
 .rv-done { cursor: default; }
@@ -475,7 +506,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
 <input type="file" id="file" accept="application/json,.json" hidden>
 
 <script>
-/* ===== lookup.js (inlined from 05_CNote_開発/成果物/lookup_2026-10-02/lookup.js; comment on line 4 escaped; one marked patch adds English definitions) ===== */
+/* ===== lookup.js (inlined from 05_CNote_開発/成果物/lookup_2026-10-02/lookup.js; comment on line 4 escaped; marked patches add English definitions and IPA) ===== */
 /*
  * lookup.js — 英単語 → { entries:[{pos, senses:[{ja, example}], example}], coverage, meaning, pos, example, source, partial }
  * 単一ファイル・依存なし・APIキーなし。<script> に貼り付けても、Node(>=18) の require でも動く。
@@ -779,6 +810,55 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
     return best ? best.t : null;
   }
 
+  // ---------- [Wordbook patch] 発音記号（IPA） ----------
+  function cleanIPA(s) {
+    s = decodeEntities(String(s || '')).replace(/\s+/g, ' ').trim();
+    return /^[\/\[].{1,58}[\/\]]$/.test(s) ? s : null;
+  }
+  function rankIPA(list, isUS) {   // US-labelled /phonemic/ first, then unlabelled /phonemic/, then any
+    var tiers = [function (x) { return isUS(x) && x.ipa.charAt(0) === '/'; }, function (x) { return x.ipa.charAt(0) === '/'; }, function () { return true; }];
+    for (var i = 0; i < tiers.length; i++) { var hit = list.filter(tiers[i])[0]; if (hit) return hit.ipa; }
+    return null;
+  }
+  // ja.wiktionary action=parse HTML: <span class="IPA"> inside the 発音 sections of the 英語 part
+  function pickJaIPA(data) {
+    var html = data && data.parse && data.parse.text;
+    if (typeof html !== 'string') return null;
+    var start = html.search(/<h2 id="英語"/);
+    if (start < 0) return null;
+    var rest = html.slice(start + 10);
+    var endRel = rest.search(/<div class="mw-heading mw-heading2"|<h2 /);
+    var sec = html.slice(start, endRel < 0 ? html.length : start + 10 + endRel);
+    var out = [], re = /<h[3-6][^>]*id="発音[^"]*"[\s\S]*?(?=<div class="mw-heading|$)/g, m;
+    while ((m = re.exec(sec))) {
+      (m[0].match(/<li>[\s\S]*?<\/li>/g) || []).forEach(function (li) {
+        var label = stripHtml(li.replace(/<span class="IPA"[\s\S]*$/, ''));
+        if (/押韻|韻/.test(label)) return;
+        (li.match(/<span class="IPA"[^>]*>[^<]+<\/span>/g) || []).forEach(function (sp) {
+          var v = cleanIPA(sp.replace(/<[^>]+>/g, ''));
+          if (v) out.push({ ipa: v, label: label });
+        });
+      });
+    }
+    return rankIPA(out, function (x) { return /アメリカ|米/.test(x.label); });
+  }
+  // en.wiktionary action=parse wikitext: {{IPA|en|/…/|…}} lines of the English section, accent from {{a|US}} / a=GA
+  function pickEnIPA(data) {
+    var wt = data && data.parse && data.parse.wikitext;
+    if (typeof wt !== 'string') return null;
+    var s = wt.indexOf('==English==');
+    if (s < 0) return null;
+    var rest = wt.slice(s + 11), e = rest.search(/\n==[^=]/);
+    var out = [];
+    rest.slice(0, e < 0 ? rest.length : e).split('\n').forEach(function (line) {
+      var mm = line.match(/\{\{IPA\|en\|([^}]+)\}\}/);
+      if (!mm) return;
+      var acc = (line.match(/\{\{a(?:ccent)?\|([^}]+)\}\}/) || [])[1] || (line.match(/\|a=([^|}]+)/) || [])[1] || '';
+      mm[1].split('|').forEach(function (a) { var v = cleanIPA(a); if (v) out.push({ ipa: v, acc: acc }); });
+    });
+    return rankIPA(out, function (x) { return /\b(US|GA|GenAm|General American)\b/i.test(x.acc); });
+  }
+
   // ---------- 本体 ----------
   function encode(s) { return encodeURIComponent(s); }
 
@@ -797,10 +877,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
       if (en.ok && !entries.length) { detail.en_wiktionary = 'not_found'; }
 
       // 活用形だけの語（mitigated, ran 等）→ 原形で引き直す（1回だけ）
+      var ipaJa = ja.ok ? pickJaIPA(ja.data) : null;   // [Wordbook patch] IPA
       if (depth < 1) {
         var lemma = lemmaOf(entries);
         if (lemma && lemma !== word) {
-          return lookupOnce(lemma, opts, depth + 1).then(function (res) { res.lemma = lemma; res.word = word; return res; });
+          return lookupOnce(lemma, opts, depth + 1).then(function (res) { res.lemma = lemma; res.word = word; res.ipa = ipaJa; res.ipaSource = ipaJa ? 'ja.wiktionary' : null; return res; });
         }
       }
 
@@ -834,8 +915,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
         ? getJSON('https://api.tatoeba.org/unstable/sentences?lang=eng&sort=relevance&limit=30&q=' + encode(word), timeout)
         : Promise.resolve(null);
 
-      return Promise.all([mmP, tatP]).then(function (r2) {
+      // [Wordbook patch] IPA: en.wiktionary wikitext only when ja.wiktionary answered but has no English pronunciation
+      var ipaP = !ipaJa && ja.ok && exists
+        ? getJSON('https://en.wiktionary.org/w/api.php?action=parse&prop=wikitext&formatversion=2&format=json&origin=*&redirects=1&page=' + encode(word), timeout)
+        : Promise.resolve(null);
+      return Promise.all([mmP, tatP, ipaP]).then(function (r2) {
         var mm = r2[0], tat = r2[1];
+        var ipaEn = r2[2] && r2[2].ok ? pickEnIPA(r2[2].data) : null;
+        if (r2[2]) detail.en_wikitext = r2[2].ok ? (ipaEn ? 'ok' : 'no_ipa') : r2[2].kind;
         if (mm) {
           if (mm.ok) {
             var pm = pickMyMemory(mm.data, word);
@@ -907,6 +994,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
           e.real.forEach(function (d) { enAdd[e.pos].senses.push({ ja: null, en: d.text, example: null }); });
         });
         return {
+          ipa: ipaJa || ipaEn || null,                                            // [Wordbook patch] IPA
+          ipaSource: ipaJa ? 'ja.wiktionary' : (ipaEn ? 'en.wiktionary' : null),
           word: word,
           entries: outEntries,
           coverage: covOrder,
@@ -956,6 +1045,7 @@ const VOICE_KEY = 'wordbook.voice';
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const SRC_OK = { meaning: ['ja.wiktionary', 'mymemory', 'manual'], pos: ['en.wiktionary', 'ja.wiktionary', 'manual'], example: ['en.wiktionary', 'tatoeba'] };
 const EX_SRC = ['en.wiktionary', 'tatoeba'];
+const IPA_RE = /^[\/\[].{1,58}[\/\]]$/;
 // filled in at start-up (bottom of this script), after every helper below exists
 let words = [];
 let days = new Set();
@@ -1049,6 +1139,8 @@ function normalize(w) {
   if (entries) o.entries = entries;
   if (w.incomplete === true) o.incomplete = true;
   if (w.manual === true) o.manual = true;
+  const ipa = str(w.ipa);
+  if (IPA_RE.test(ipa)) o.ipa = ipa;
   if (w.state === 'pending' || w.state === 'failed') o.state = w.state;
   if (o.state === 'failed' && ['offline', 'rate_limit', 'unavailable'].includes(w.failKind)) o.failKind = w.failKind;
   return o;
@@ -1272,6 +1364,8 @@ async function fetchInto(id) {
   cur.meaning = str(res.meaning) || (entries ? entries[0].senses.slice(0, 3).map(s => s.ja || s.en).join(' / ') : cur.meaning);
   cur.pos = str(res.pos) || (entries ? entries[0].pos : cur.pos);
   cur.example = str(res.example) || cur.example;
+  const ipa = str(res.ipa);
+  if (IPA_RE.test(ipa)) cur.ipa = ipa; else delete cur.ipa; // no pronunciation found: show nothing
   const src = normSrc(res.source);
   if (src) cur.src = src; else delete cur.src;
   if (res.incomplete === true) cur.incomplete = true; else delete cur.incomplete;
@@ -1279,10 +1373,17 @@ async function fetchInto(id) {
   cur.updatedAt = Date.now();
   save();
 }
+let listDirty = false;
+const noteFocused = scope => { const a = document.activeElement; return !!(a && a.dataset && a.dataset.note && a.closest(scope)); };
 function refreshWordViews() {
   if (current === 'add') renderRecent();
-  if (current === 'list') { const y = $('#s-list').scrollTop; renderResults(); $('#s-list').scrollTop = y; }
+  if (current === 'list') {
+    if (noteFocused('#s-list')) { listDirty = true; return; } // re-render after typing ends
+    const y = $('#s-list').scrollTop; renderResults(); $('#s-list').scrollTop = y;
+  }
 }
+const ipaHTML = w => (w.ipa ? `<span class="ipa">${esc(w.ipa)}</span>` : '');
+function autosize(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
 // back online: fetch what could not be fetched (the queue keeps the spacing)
 window.addEventListener('online', () => {
   words.filter(w => w.state === 'failed').slice(0, 10).forEach(w => queueLookup(w.id));
@@ -1307,6 +1408,7 @@ function renderAdd() {
       <ol class="recent" id="add-recent" aria-live="polite"></ol>
     </div>`;
     $('#add-form').addEventListener('submit', e => { e.preventDefault(); addWord(); });
+    $('#add-word').addEventListener('input', () => { if (addMsg) { addMsg = null; manualOpen = false; renderAddMsg(); } });
   }
   renderAddMsg();
   renderRecent();
@@ -1321,9 +1423,9 @@ function renderAddMsg() {
       ${manualOpen ? `<form class="manual" id="manual-form" novalidate autocomplete="off">
           <input name="meaning" type="text" placeholder="Meaning" aria-label="Meaning of ${esc(addMsg.word)}">
           <input name="pos" type="text" placeholder="Part of speech (optional)" aria-label="Part of speech" autocapitalize="none">
-          <button class="btn solid" type="submit">Save</button>
+          <div class="manual-actions"><button class="btn solid" type="submit">Save</button><button type="button" class="small-btn" data-act="nohit-cancel">Cancel</button></div>
         </form>`
-      : `<button class="small-btn" data-act="add-anyway">Add anyway</button>`}
+      : `<div class="nohit-actions"><button class="small-btn" data-act="add-anyway">Add anyway</button><button class="small-btn" data-act="nohit-cancel">Cancel</button></div>`}
     </div>`;
     const f = $('#manual-form');
     if (f) { f.addEventListener('submit', e => { e.preventDefault(); saveManual(); }); f.meaning.focus(); }
@@ -1343,18 +1445,30 @@ function stateLine(w) {
   if (w.incomplete) return `<button class="small-btn" data-act="retry" data-id="${esc(w.id)}">Retry</button>`;
   return '';
 }
+function recentHead(w) {
+  return `<div class="recent-head"><span class="recent-word">${esc(w.word)}</span>${ipaHTML(w)}${speakBtn(w.word, 'Pronounce ' + w.word, 'small')}</div>`;
+}
 function renderRecent() {
   const box = $('#add-recent');
   if (!box) return;
   recent = recent.filter(id => byId(id));
-  box.innerHTML = recent.map((id, i) => {
+  const first = recent[0] ? byId(recent[0]) : null;
+  const older = recent.slice(1).map(id => {
     const w = byId(id);
-    return `<li class="recent-item ${i ? 'older' : ''}" data-id="${esc(w.id)}">
-      <div class="recent-head"><span class="recent-word">${esc(w.word)}</span>${speakBtn(w.word, 'Pronounce ' + w.word, 'small')}</div>
-      ${stateLine(w)}
-      ${i === 0 ? entriesHTML(w, 'add') : (summary(w) ? `<p class="recent-sum">${esc(summary(w))}</p>` : '')}
-    </li>`;
+    return `<li class="recent-item older" data-id="${esc(w.id)}">${recentHead(w)}${stateLine(w)}${summary(w) ? `<p class="recent-sum">${esc(summary(w))}</p>` : ''}</li>`;
   }).join('');
+  const dyn = w => recentHead(w) + stateLine(w) + entriesHTML(w, 'add');
+  const cur = box.querySelector('li.recent-item.first');
+  if (first && cur && cur.dataset.id === first.id) {
+    // same word on top: refresh only its text, never the note field (it may be in use)
+    cur.querySelector('.recent-dyn').innerHTML = dyn(first);
+    while (cur.nextElementSibling) cur.nextElementSibling.remove();
+    cur.insertAdjacentHTML('afterend', older);
+    return;
+  }
+  box.innerHTML = (first ? `<li class="recent-item first" data-id="${esc(first.id)}"><div class="recent-dyn">${dyn(first)}</div>
+      <textarea class="note-input" rows="1" data-note="${esc(first.id)}" placeholder="Note" aria-label="Note for ${esc(first.word)}">${esc(first.note)}</textarea></li>` : '') + older;
+  box.querySelectorAll('textarea[data-note]').forEach(autosize);
 }
 function validWord(text) {
   const n = window.lookupWord && window.lookupWord.normalizeWord;
@@ -1474,7 +1588,7 @@ function entryHTML(w, no) {
     <div class="entry-head">
       <button class="entry-main" data-act="toggle" aria-expanded="${isOpen}">
         <span class="entry-no num">${pad(no)}</span>
-        <span><span class="entry-word">${esc(w.word)}</span>${firstPos ? `<span class="entry-pos">${esc(firstPos)}</span>` : ''}</span>
+        <span><span class="entry-word">${esc(w.word)}</span>${ipaHTML(w)}${firstPos ? `<span class="entry-pos">${esc(firstPos)}</span>` : ''}</span>
         <span class="entry-meaning ${sum ? '' : 'empty'}">${sum ? esc(sum) : (pending ? 'Meaning will be added shortly' : 'No meaning yet')}</span>
       </button>
       ${speakBtn(w.word, 'Pronounce ' + w.word) || '<span></span>'}
@@ -1484,7 +1598,7 @@ function entryHTML(w, no) {
       ${stateLine(w)}
       ${entriesHTML(w, 'list')}
       <label class="note-fld"><span class="label">My note</span>
-        <textarea rows="2" data-note="${esc(w.id)}" placeholder="Write a note">${esc(w.note)}</textarea></label>
+        <textarea class="note-input" rows="1" data-note="${esc(w.id)}" placeholder="Write a note">${esc(w.note)}</textarea></label>
       ${srcLine(w)}
       <div class="entry-actions">
         ${isLegacy(w) && !pending ? `<button class="small-btn" data-act="retry" data-id="${esc(w.id)}">Refresh</button>` : ''}
@@ -1526,6 +1640,7 @@ function renderList() {
 function renderResults() {
   const r = $('#results'); if (!r) return;
   r.innerHTML = resultsHTML();
+  r.querySelectorAll('textarea[data-note]').forEach(autosize);
   const c = $('#s-list .clear-btn'); if (c) c.hidden = !query;
 }
 function renderVoice() {
@@ -1595,10 +1710,11 @@ function renderCard() {
   const top = `<div class="rv-top"><span class="rv-no num">${R.pos + 1} / ${total}</span>${countsHTML()}</div>`;
   slot.innerHTML = `<div class="rv-card ${R.back ? 'is-back' : ''}" id="rv-card" data-act="flip" role="button" aria-label="${R.back ? 'Show the word' : 'See answer'}">
     ${R.back
-      ? `<div class="rv-face rv-back">${top}<p class="rv-back-word">${esc(w.word)}</p>
+      ? `<div class="rv-face rv-back">${top}<p class="rv-back-word">${esc(w.word)}${ipaHTML(w)}</p>
+          ${w.note ? `<div class="rv-note"><span class="rv-note-k">Note</span><p>${esc(w.note)}</p></div>` : ''}
           <div class="rv-scroll">${entriesHTML(w, 'review') || '<p class="muted">No meaning yet.</p>'}</div></div>`
       : `<div class="rv-face rv-front">${top}
-          <div class="rv-word-wrap"><p class="rv-word">${esc(w.word)}</p>${speakBtn(w.word, 'Pronounce ' + w.word, 'rv-say')}</div>
+          <div class="rv-word-wrap"><p class="rv-word">${esc(w.word)}</p>${w.ipa ? `<p class="rv-ipa">${esc(w.ipa)}</p>` : ''}${speakBtn(w.word, 'Pronounce ' + w.word, 'rv-say')}</div>
           <p class="rv-hint">See answer</p></div>`}
   </div>`;
 }
@@ -1639,17 +1755,24 @@ function judge(v) {
     stage.appendChild(ov);
     const tilt = rvVar('--rv-tilt', 4) * (got ? 1 : -1), sc = rvVar('--rv-scale', 1.1);
     const tin = rvVar('--rv-in-ms', 100), hold = rvVar('--rv-hold-ms', 300), tout = rvVar('--rv-out-ms', 240);
-    const drop = rvVar('--rv-drop', 90), outSc = rvVar('--rv-out-scale', 0.55);
+    // fit: the tilted stamp's bounding box must stay inside the card
+    const th = Math.abs(tilt) * Math.PI / 180, W = r.width, H = r.height;
+    const bw = W * Math.cos(th) + H * Math.sin(th), bh = H * Math.cos(th) + W * Math.sin(th);
+    const fit = Math.min(W / bw, H / bh) * 0.98;
+    const sFit = Math.min(sc, fit);
+    const outSc = Math.min(rvVar('--rv-out-scale', 0.55), sFit);
+    const drop = Math.min(rvVar('--rv-drop', 90), Math.max(0, (H - outSc * bh) / 2 - 2));
+    const dx = Math.min(18, Math.max(0, (W - outSc * bw) / 2 - 2));
     let anim;
     if (reduced()) {
       anim = ov.animate([{ opacity: 1 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: 450 });
     } else {
       const T = tin + hold + tout;
       anim = ov.animate([
-        { offset: 0, opacity: 0, transform: 'rotate(0deg) scale(1)', easing: 'ease-out' },
-        { offset: tin / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sc})` },
-        { offset: (tin + hold) / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sc})`, easing: 'cubic-bezier(.55,0,1,.45)' },
-        { offset: 1, opacity: 0, transform: `translate(${got ? 18 : -18}px, ${drop}px) rotate(${tilt}deg) scale(${outSc})` }
+        { offset: 0, opacity: 0, transform: `rotate(0deg) scale(${sFit})`, easing: 'ease-out' },
+        { offset: tin / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sFit})` },
+        { offset: (tin + hold) / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sFit})`, easing: 'cubic-bezier(.55,0,1,.45)' },
+        { offset: 1, opacity: 0, transform: `translate(${got ? dx : -dx}px, ${drop}px) rotate(${tilt}deg) scale(${outSc})` }
       ], { duration: T });
     }
     anim.onfinish = anim.oncancel = () => ov.remove();
@@ -1986,6 +2109,7 @@ document.addEventListener('click', e => {
     }
     case 'retry': queueLookup(b.dataset.id); break;
     case 'add-anyway': manualOpen = true; renderAddMsg(); break;
+    case 'nohit-cancel': { addMsg = null; manualOpen = false; const i = $('#add-word'); if (i) i.value = ''; renderAddMsg(); break; }
     case 'voice-test': Speech.speak('This is the voice for your wordbook.', b); break;
     case 'flip': flipCard(); break;
     case 'judge': judge(b.dataset.v); break;
@@ -2001,10 +2125,52 @@ document.addEventListener('input', e => {
     const w = byId(e.target.dataset.note);
     if (!w) return;
     w.note = e.target.value.trim(); w.updatedAt = Date.now();
+    if (e.target.tagName === 'TEXTAREA') { autosize(e.target); keepInView(e.target, true); }
     clearTimeout(noteTimer); noteTimer = setTimeout(save, 300);
   }
 });
-document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.note) { clearTimeout(noteTimer); save(); } });
+document.addEventListener('focusout', e => {
+  if (e.target.dataset && e.target.dataset.note) {
+    clearTimeout(noteTimer); save();
+    if (listDirty && current === 'list') setTimeout(() => { if (!noteFocused('#s-list')) { listDirty = false; const y = $('#s-list').scrollTop; renderResults(); $('#s-list').scrollTop = y; } }, 0);
+  }
+});
+
+/* ================= Keyboard (iOS): hide the tab bar, keep the field in sight ================= */
+const isField = el => !!el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !/^(checkbox|radio|range|file|button|submit|reset)$/i.test(el.type)) || el.tagName === 'SELECT');
+function setTyping(on) { document.body.classList.toggle('kbd', on); }
+// what is actually visible (the visual viewport shrinks when the on-screen keyboard opens)
+function visibleBox() {
+  const vv = window.visualViewport;
+  return vv ? { top: vv.offsetTop, height: vv.height } : { top: 0, height: window.innerHeight };
+}
+// scroll the field's screen so the field sits around the middle of what is visible
+function keepInView(el, onlyIfHidden) {
+  if (!el || document.activeElement !== el) return;
+  const sc = el.closest('.screen');
+  if (!sc) return;
+  const v = visibleBox();
+  const r = el.getBoundingClientRect();
+  const margin = 16;
+  if (onlyIfHidden && r.top >= v.top + margin && r.bottom <= v.top + v.height - margin) return;
+  const fieldMid = r.height > v.height * 0.6 ? r.top + v.height * 0.3 : r.top + r.height / 2;
+  sc.scrollTop += fieldMid - (v.top + v.height / 2);
+}
+document.addEventListener('focusin', e => {
+  if (!isField(e.target)) return;
+  setTyping(true);
+  if (e.target.dataset && e.target.dataset.note) {
+    keepInView(e.target);
+    setTimeout(() => keepInView(e.target), 350); // again once the keyboard has finished opening
+  }
+});
+document.addEventListener('focusout', () => setTimeout(() => { if (!isField(document.activeElement)) setTyping(false); }, 80));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const a = document.activeElement;
+    if (a && a.dataset && a.dataset.note) keepInView(a);
+  });
+}
 document.addEventListener('change', e => {
   if (e.target.id === 'voice-sel') Speech.choose(e.target.value);
 });
