@@ -46,6 +46,17 @@
   --bar-bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) - 12px));
   --bar-side: 5.6vw;
   --bar-space: calc(var(--bar-h) + var(--bar-bottom) + 28px);
+
+  /* ---- review card: knobs tuned in review-lab.html ---- */
+  --rv-flip-ms: 200;       /* whole flip: old face narrows to the centre, new face widens */
+  --rv-tilt: 4;            /* degrees the Got it / Not yet stamp leans (Got it clockwise) */
+  --rv-scale: 1.1;         /* stamp size relative to the card */
+  --rv-in-ms: 100;         /* stamp fade-in */
+  --rv-hold-ms: 300;       /* stamp stays still */
+  --rv-out-ms: 240;        /* stamp drops away */
+  --rv-drop: 90;           /* px the stamp falls while leaving */
+  --rv-out-scale: 0.55;    /* stamp size when it is gone */
+  --rv-radius: 34px;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -261,6 +272,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
 .btn:disabled { opacity: .35; cursor: default; }
 
 /* ---------- Add ---------- */
+.add { padding-top: 10px; }
 .add-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
 .add-row input {
   width: 100%; min-width: 0;
@@ -269,98 +281,92 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
   font-size: 26px; font-weight: 600; letter-spacing: -.015em;
   padding: 8px 0 10px;
 }
-.add-row input::placeholder { color: var(--ink-3); font-weight: 500; font-size: 22px; letter-spacing: -.005em; }
+.add-row input::placeholder { color: var(--ink-3); font-weight: 500; }
 .add-row .btn { width: 92px; }
-.hint { color: var(--ink-3); font-size: 13px; margin: 12px 0 0; }
-.add-err { color: var(--danger); font-size: 13px; margin: 8px 0 0; }
-.added { margin-top: 40px; border-top: 1.5px solid var(--ink); padding-top: 12px; }
-.added-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.status { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; }
-.status.busy::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); margin-right: 8px; animation: pulse 1s ease-in-out infinite; }
+.nohit { margin-top: 30px; }
+.nohit-t { font-size: 22px; font-weight: 700; letter-spacing: -.01em; margin: 30px 0 2px; }
+.nohit .nohit-t { margin-top: 0; }
+.muted { color: var(--ink-3); font-size: 14px; margin: 16px 0 0; }
+.small-btn {
+  min-height: 36px; padding: 0;
+  font-size: 13px; font-weight: 600; color: var(--ink-2);
+  text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px;
+}
+.manual { display: grid; gap: 8px; margin-top: 12px; }
+.manual input { border: 0; border-bottom: 1px solid var(--ink); border-radius: 0; background: transparent; font-size: 16px; padding: 10px 0; outline: none; }
+.manual input[name=pos] { border-bottom-color: var(--rule); }
+.manual .btn { margin-top: 8px; }
+.recent { list-style: none; margin: 30px 0 0; padding: 0; }
+.recent-item { padding: 16px 0 18px; border-top: 1px solid var(--rule); }
+.recent-item:first-child { border-top: 1.5px solid var(--ink); }
+.recent-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.recent-word { font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; word-break: break-word; }
+.recent-item.older .recent-word { font-size: 17px; font-weight: 600; }
+.recent-sum { color: var(--ink-2); margin: 2px 0 0; font-size: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.wstate { font-size: 13px; color: var(--ink-3); margin: 4px 0 0; }
+.wstate.busy::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); margin-right: 8px; vertical-align: 1px; animation: pulse 1s ease-in-out infinite; }
+.icon-btn.small { width: 36px; height: 36px; }
 
-/* ---------- Forms (shared by Add details and Edit) ---------- */
-.fld { display: block; padding: 20px 0 0; }
-.fld .label { display: flex; justify-content: space-between; }
-.fld input[type=text], .fld textarea {
-  display: block; width: 100%;
-  border: 0; border-bottom: 1px solid var(--rule);
-  background: transparent;
-  padding: 9px 0 10px;
-  font-size: 16px; line-height: 1.55;
-  border-radius: 0; outline: none; resize: none;
-  transition: border-color .15s;
-}
-.fld input[type=text]:focus, .fld textarea:focus { border-bottom-color: var(--ink); }
-.fld input.big { font-size: 24px; font-weight: 600; letter-spacing: -.015em; line-height: 1.3; }
-.fld.invalid input { border-bottom-color: var(--danger); }
-.err { color: var(--danger); font-size: 13px; margin-top: 6px; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.chip {
-  min-height: 36px; padding: 0 14px;
-  border: 1px solid var(--rule); border-radius: 18px;
-  font-size: 14px; font-weight: 500; color: var(--ink-2);
-}
-.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-.toggle-row {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; min-height: 60px; margin-top: 26px;
-  border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--rule);
-  font-size: 16px; text-align: left;
-}
-.toggle-row .mark { width: 24px; height: 24px; }
-.form-delete { margin-top: 36px; }
+/* ---------- Entries: senses by part of speech ---------- */
+.ents { margin-top: 10px; }
+.ent + .ent { margin-top: 16px; }
+.ent-pos { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 3px; }
+.senses { margin: 0; padding: 0 0 0 1.7em; }
+.senses li { font-size: 15px; line-height: 1.55; padding: 2px 0; word-break: break-word; }
+.senses li::marker { color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+.en-tag { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .08em; line-height: 1.5; border: 1px solid var(--rule); border-radius: 3px; color: var(--ink-3); padding: 0 4px; margin-right: 6px; vertical-align: 2px; }
+.en-text { color: var(--ink-2); font-size: 14px; }
+.more { min-height: 32px; padding: 0 0 0 1.7em; font-size: 12px; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+.ent-ex { display: grid; grid-template-columns: 1fr 36px; align-items: start; gap: 4px; margin-top: 6px; }
+.ent-ex p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-2); padding-left: 10px; border-left: 2px solid var(--rule); }
+.note-fld { display: block; margin-top: 18px; }
+.note-fld textarea { display: block; width: 100%; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; background: transparent; font-size: 16px; line-height: 1.5; padding: 6px 0; outline: none; resize: vertical; }
+.note-fld textarea:focus { border-bottom-color: var(--ink); }
+.voice { margin-top: 40px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.voice-row { display: flex; align-items: center; gap: 18px; margin-top: 8px; }
+.voice select { flex: 1; min-width: 0; min-height: 40px; font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: transparent; color: var(--ink); }
 
-/* full-screen overlay (Edit) sits above the tab bar */
-.view {
-  position: fixed; inset: 0; z-index: 40;
-  background: var(--paper);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  animation: rise .18s ease-out;
+/* ---------- Review: one big card ---------- */
+#s-review { overflow: hidden; padding-bottom: 0; }
+.rv {
+  display: flex; flex-direction: column;
+  height: calc(100vh - var(--safe-t) - 58px - var(--bar-h) - var(--bar-bottom) - 14px);
+  height: calc(100dvh - var(--safe-t) - 58px - var(--bar-h) - var(--bar-bottom) - 14px);
 }
-@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
-.view-top { position: sticky; top: 0; z-index: 2; background: var(--paper); padding-top: var(--safe-t); border-bottom: 1px solid var(--rule); }
-.view-top .wrap { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 56px; }
-.view-top .label { text-align: center; color: var(--ink); padding-left: .12em; }
-.top-btn { min-height: 44px; padding: 0 2px; font-size: 15px; color: var(--ink-2); justify-self: start; }
-.top-btn.right { justify-self: end; color: var(--ink); font-weight: 600; }
-.form { padding-top: 8px; padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+.rv-stage { position: relative; flex: 1; min-height: 0; }
+#rv-card-slot { position: absolute; inset: 0; }
+.rv-card { position: absolute; inset: 0; border-radius: var(--rv-radius); cursor: pointer; -webkit-user-select: none; user-select: none; will-change: transform; }
+.rv-face { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 20px 26px 22px; border-radius: inherit; overflow: hidden; }
+.rv-front { background: #2b2a28; color: #fff; }
+.rv-back { background: #fff; color: var(--ink); border: 1.5px solid #dcd7cc; }
+.rv-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; letter-spacing: .04em; min-height: 20px; }
+.rv-front .rv-top { color: rgba(255, 255, 255, .5); }
+.rv-back .rv-top { color: var(--ink-3); }
+.rv-counts { display: flex; gap: 12px; }
+.c-miss { color: #b3412e; } .c-got { color: #2e7d4f; }
+.rv-front .c-miss { color: #e28f7d; } .rv-front .c-got { color: #8fcaa3; }
+.rv-word-wrap { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-bottom: 12px; }
+.rv-word { font-size: clamp(34px, 11vw, 54px); font-weight: 600; letter-spacing: -.025em; line-height: 1.12; margin: 0; word-break: break-word; }
+.rv-say { color: rgba(255, 255, 255, .72); margin: 12px 0 0 -8px; }
+.rv-say:active { background: rgba(255, 255, 255, .1); }
+.rv-hint { text-align: center; font-size: 13px; color: rgba(255, 255, 255, .45); margin: 0; }
+.rv-back-word { font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; margin: 12px 0 2px; word-break: break-word; }
+.rv-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; margin: 0 -8px; padding: 0 8px 6px; }
+.rv-judge { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding-top: 14px; }
+.judge { height: 58px; border-radius: 29px; border: 1.5px solid var(--rule); background: #fff; display: grid; place-items: center; transition: transform .1s; }
+.judge.miss { color: #b3412e; } .judge.got { color: #2e7d4f; }
+.judge:active { transform: scale(.96); }
+.rv-ov { position: absolute; z-index: 3; border-radius: var(--rv-radius); display: grid; place-items: center; pointer-events: none; opacity: 0; }
+.rv-ov span { font-size: 40px; font-weight: 700; letter-spacing: -.02em; }
+.rv-ov.got { background: #d6ecdd; border: 2px solid #9ccfad; color: #2e7d4f; }
+.rv-ov.miss { background: #f7ddd6; border: 2px solid #e8a999; color: #b3412e; }
+.rv-done { cursor: default; }
+.rv-done .rv-face { background: #fff; border: 1.5px solid #dcd7cc; justify-content: center; align-items: center; text-align: center; }
+.done-big { font-size: 64px; font-weight: 700; letter-spacing: -.04em; line-height: 1; margin: 0; }
+.done-counts { display: flex; gap: 24px; justify-content: center; font-size: 20px; font-weight: 700; margin: 14px 0 0; }
+.done-actions { display: grid; gap: 10px; width: 100%; max-width: 260px; margin-top: 32px; }
 
-/* ---------- Review ---------- */
-.scope { display: flex; gap: 24px; }
-.scope .text-btn { color: var(--ink-3); text-decoration-color: transparent; }
-.scope .text-btn[aria-pressed="true"] { color: var(--ink); text-decoration-color: var(--ink); }
-.progress { height: 1px; background: var(--rule); margin-top: 4px; position: relative; }
-.progress i { position: absolute; left: 0; top: -1px; height: 3px; background: var(--ink); transition: width .25s ease; }
-.card { padding-top: 40px; padding-bottom: calc(52px + 24px); }
-.card-no { display: flex; justify-content: space-between; }
-.card-word { font-size: 44px; font-weight: 700; line-height: 1.1; letter-spacing: -.028em; margin: 16px 0 8px; word-break: break-word; }
-.card-pos { color: var(--ink-3); font-size: 15px; font-weight: 500; min-height: 1em; }
-.card-say { margin: 18px 0 0; }
-.card-say .icon-btn { width: 52px; height: 52px; border: 1px solid var(--rule); }
-.card-reveal { margin-top: 28px; border-top: 1px solid var(--rule); padding-top: 20px; }
-.card-meaning { font-size: 20px; font-weight: 500; line-height: 1.55; margin: 0; word-break: break-word; }
-/* several dictionary senses ("a / b / c") are set one per line */
-.card-senses { list-style: none; margin: 0; padding: 0; }
-.card-senses li { font-size: 18px; font-weight: 500; line-height: 1.5; padding: 6px 0; word-break: break-word; }
-.card-senses li + li { border-top: 1px dashed var(--rule); }
 .sources a[href*="creativecommons"] { white-space: nowrap; }
-.card-example { margin-top: 22px; }
-.card-example .label { margin-bottom: 6px; }
-.card-hint { color: var(--ink-3); font-size: 15px; margin: 0; }
-.review-actions {
-  position: fixed; left: 0; right: 0; z-index: 6;
-  bottom: calc(var(--bar-bottom) + var(--bar-h) + 14px);
-}
-.review-actions .btn { width: 100%; }
-.grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.grade .mark { width: 16px; height: 16px; }
-.grade .btn:not(.solid) .mark { border-color: var(--ink-3); }
-.grade .btn.solid .mark.on { background: var(--paper); border-color: var(--paper); color: var(--ink); }
-.done h2 { font-size: 32px; font-weight: 700; letter-spacing: -.025em; line-height: 1.15; margin: 14px 0 10px; }
-.done p { color: var(--ink-2); margin: 0; }
-.done-actions { display: grid; gap: 12px; margin-top: 28px; }
-
 /* ---------- Tab bar ---------- */
 .tabbar {
   position: fixed; z-index: 30;
@@ -469,23 +475,34 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
 <input type="file" id="file" accept="application/json,.json" hidden>
 
 <script>
-/* ===== lookup.js (inlined from 05_CNote_開発/成果物/lookup_2026-09-30/lookup.js; only the comment on line 4 was escaped) ===== */
+/* ===== lookup.js (inlined from 05_CNote_開発/成果物/lookup_2026-10-02/lookup.js; comment on line 4 escaped; one marked patch adds English definitions) ===== */
 /*
- * lookup.js — 英単語 → { meaning(日本語), pos, example(英語1文), source, partial }
+ * lookup.js — 英単語 → { entries:[{pos, senses:[{ja, example}], example}], coverage, meaning, pos, example, source, partial }
  * 単一ファイル・依存なし・APIキーなし。<script> に貼り付けても、Node(>=18) の require でも動く。
  *   <script src="lookup.js"><\/script>  →  window.lookupWord(word, opts?)
  *
  * 取得元（すべてブラウザからのCORS fetchで実測済み。詳細は 結果メモ.md）
  *   POS・例文   : en.wiktionary.org  REST  /api/rest_v1/page/definition/{word}
- *   日本語の意味: ja.wiktionary.org  action=query&prop=extracts（「英語」節の語釈）
- *   意味の代替  : api.mymemory.translated.net（機械翻訳。ja.wiktionaryに項目が無い語のみ）
- *   例文の代替  : api.tatoeba.org/unstable/sentences（en.wiktionaryに例文が無い語のみ）
+ *   日本語の意味: ja.wiktionary.org  action=parse&prop=text（「英語」節の <ol><li> 語釈を全品詞・全件）
+ *   意味の代替  : api.mymemory.translated.net（機械翻訳。ja.wiktionaryに項目が無い語のみ。machine:true）
+ *   例文の代替  : api.tatoeba.org/unstable/sentences（旧フィールド example。品詞ごとの例文には、語の品詞が1つだけの場合のみ使う）
  *
- * 成功時: { meaning, pos, example, source:{meaning,pos,example}, partial, word, lemma? }
+ * 成功時の返り値
+ *   entries: [{ pos:verb, senses:[{ ja:走る, example:null }, …], example:null|英文, exampleSource:null|en.wiktionary }, …]
+ *     ja.wiktionary の「英語」節にある品詞を辞書の出現順に全部（同じ品詞の節は1つにまとめる）。
+ *     senses は語釈を全件（件数の上限なし）。sense.example は常に null（語釈ごとの例文は、取得元同士で語義を対応付けできない）。
+ *     entry.example は同じ品詞の en.wiktionary の例文1つ。無ければ null（他品詞の例文は入れない）。
+ *     例外: 語全体で品詞が1つしかない場合だけ、Tatoeba の例文を使う（exampleSource:'tatoeba'。品詞が紛れないため）。
+ *     ja.wiktionary に項目が無く MyMemory で補った場合は senses:[{ja, example:null, machine:true}] の1件だけ。
+ *   coverage: [{pos, ja, en}] 品詞ごとの ja 語釈の取得数と en.wiktionary の語義数（取りこぼしの目安。en の方が多ければ「全語義ではない」）。
+ *   meaning/pos/example/source/partial/lemma/word: 旧フィールド（主品詞の語釈を最大3つ・例文は Tatoeba 補完あり）。従来どおり。
  *   取れなかった項目は null。1つでも null なら partial:true。
+ *   incomplete: ja/en.wiktionary のどちらかが障害・レート制限で取れていない（語釈や品詞が欠けている可能性。時間をおいて再取得）。
  * 失敗時: Error を throw。err.kind は次のいずれか
- *   'invalid_input' | 'offline' | 'not_found' | 'rate_limit' | 'unavailable'
+ *   invalid_input | offline | not_found | rate_limit | unavailable
  *   （err.detail に各取得元ごとの結果が入る。デバッグ用）
+ *   注意: ja.wiktionary の 429 は CORS ヘッダが付かないため、ブラウザでは通信失敗(TypeError)に見え unavailable になる。
+ *         en.wiktionary・MyMemory の 429 は rate_limit。
  */
 (function (root, factory) {
   var api = factory(root);
@@ -595,10 +612,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
   }
 
   // en.wiktionary の例文候補（HTML付き原文）から「文らしい」もの1つ
-  function pickEnExample(entries, pos) {
-    // 同じ品詞の項目だけを見る（他品詞の例文は意味と食い違うので使わない）。同じ品詞の項目が無い時だけ他品詞も見る
+  function pickEnExample(entries, pos, strict) {
+    // 同じ品詞の項目だけを見る（他品詞の例文は意味と食い違うので使わない）。
+    // strict でなければ、同じ品詞の項目が無い時だけ他品詞も見る（旧フィールド example 用）
     var same = entries.filter(function (e) { return e.pos === pos && !e.isFormOf; });
-    var pool = same.length ? same : entries.filter(function (e) { return !e.isFormOf; });
+    var pool = same.length || strict ? same : entries.filter(function (e) { return !e.isFormOf; });
     var best = null, order = 0;
     pool.forEach(function (ent) {
       ent.real.forEach(function (d) {
@@ -651,39 +669,66 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
     return (label && out ? '\u3008' + label + '\u3009' : '') + out;
   }
 
-  // 英語の引用文らしい行＝英単語が5語以上連続する行。見出し行「ambiguous (比較級 more ambiguous, 最上級 …)」は連続しないので該当しない
-  function looksLikeEnglishQuote(line) {
-    return /[A-Za-z][A-Za-z'\u2019-]*(?:[ ,;]+[A-Za-z][A-Za-z'\u2019-]*){4,}/.test(line);
-  }
-
-  // 戻り値: [{pos, glosses:[..]}]  ※「英語」節のみ。語釈の後に出てくる英語引用文とその訳文は拾わない
+  // ja.wiktionary の action=parse の HTML から「英語」節の語釈を取る。
+  // 語釈は <ol> 直下の <li>（入れ子の <ol> の <li> も語釈）。引用文・訳文・類義語は <ul>/<dl> の中なので構造で除外できる。
+  // 戻り値: [{pos, glosses:[..]}]（品詞ごとに1つ。同じ品詞の節が複数あれば出現順に連結）
   function parseJa(data) {
-    var pages = data && data.query && data.query.pages;
-    if (!pages) return [];
-    var page = pages[Object.keys(pages)[0]];
-    if (!page || page.missing !== undefined || !page.extract) return [];
-    var m = page.extract.match(/(?:^|\n)== 英語 ==\n([\s\S]*?)(?=\n== [^=]|$)/);
-    if (!m) return [];
-    var sections = [];
-    var cur = null;
-    var lines = m[1].split('\n');
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i];
-      var h = line.match(/^(={3,})\s*(.+?)\s*\1\s*$/);
-      if (h) {
-        var title = h[2].replace(/\s*\d+$/, '');
-        cur = (h[1].length === 3 && JA_POS[title]) ? { pos: JA_POS[title], glosses: [], closed: false } : null;
-        if (cur) sections.push(cur);
-        continue;
-      }
-      if (!cur || cur.closed) continue;
-      if (looksLikeEnglishQuote(line)) { if (cur.glosses.length) cur.closed = true; continue; }
-      if (line.indexOf('\u3002') < 0 || !JA_RE.test(line)) continue;      // 語釈は「。」で終わる日本語の行
-      if (/^\s*(?:類義語|対義語|派生語|関連語|成句|参照)/.test(line)) continue;
-      var g = cleanGloss(line);
-      if (g && JA_RE.test(g) && cur.glosses.length < 3) cur.glosses.push(g);
+    var html = data && data.parse && data.parse.text;
+    if (typeof html !== 'string') return [];
+    var start = html.search(/<h2 id="英語"/);
+    if (start < 0) return [];
+    var rest = html.slice(start + 10);
+    var endRel = rest.search(/<div class="mw-heading mw-heading2"|<h2 /);
+    var body = html.slice(start, endRel < 0 ? html.length : start + 10 + endRel);
+    var re = /<(\/?)(h[2-6]|ol|ul|dl|li|dd|dt)\b[^>]*>/gi;
+    var stack = [], order = [], byPos = {}, cur = null, last = 0, m;
+    function top() { return stack[stack.length - 1]; }
+    function text(seg) {
+      var t = top();
+      if (!t || !seg) return;
+      if (t.tag === 'li' && t.listTag === 'ol') t.buf += seg;
+      else if (/^h[2-6]$/.test(t.tag)) t.buf += seg;
     }
-    return sections.filter(function (x) { return x.glosses.length; });
+    function inQuote() {   // <ul>/<dl>/<dd> の内側＝引用・類義語・派生語。語釈ではない
+      for (var i = 0; i < stack.length; i++) if (stack[i].tag === 'ul' || stack[i].tag === 'dl' || stack[i].tag === 'dd') return true;
+      return false;
+    }
+    function emit(li) {
+      if (li.done) return;
+      li.done = true;
+      if (!cur || inQuote()) return;
+      var raw = li.buf.replace(/<(rt|rp|sup)\b[^>]*>[\s\S]*?<\/\1>/gi, '');
+      var g = cleanGloss(stripHtml(raw));
+      if (g && JA_RE.test(g) && cur.glosses.indexOf(g) < 0) cur.glosses.push(g);
+    }
+    while ((m = re.exec(body))) {
+      text(body.slice(last, m.index));
+      last = re.lastIndex;
+      var closing = !!m[1], tag = m[2].toLowerCase();
+      if (!closing) {
+        var parent = top();
+        if ((tag === 'ol' || tag === 'ul' || tag === 'dl') && parent && parent.tag === 'li') emit(parent);   // 入れ子の前に親の語釈を確定
+        stack.push({ tag: tag, buf: '', done: false, listTag: parent ? parent.tag : null });
+      } else {
+        var idx = -1;
+        for (var i = stack.length - 1; i >= 0; i--) if (stack[i].tag === tag) { idx = i; break; }
+        if (idx < 0) continue;
+        var el = stack[idx];
+        stack.length = idx + 1;            // el 自身は残したまま emit（祖先の判定に使う）
+        if (tag === 'li') emit(el);
+        stack.length = idx;
+        if (/^h[2-6]$/.test(tag) && +tag.charAt(1) >= 3) {
+          var title = stripHtml(el.buf).replace(/\s*\d+$/, '').trim();
+          cur = null;
+          if (JA_POS[title]) {
+            var p = JA_POS[title];
+            if (!byPos[p]) { byPos[p] = { pos: p, glosses: [] }; order.push(byPos[p]); }
+            cur = byPos[p];
+          }
+        }
+      }
+    }
+    return order.filter(function (x) { return x.glosses.length; });
   }
 
   function joinGlosses(glosses) {
@@ -741,7 +786,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
     var timeout = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
     var detail = {};
     var enP = getJSON('https://en.wiktionary.org/api/rest_v1/page/definition/' + encode(word), timeout);
-    var jaP = getJSON('https://ja.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles=' + encode(word), timeout);
+    var jaP = getJSON('https://ja.wiktionary.org/w/api.php?action=parse&prop=text&disablelimitreport=1&disableeditsection=1&disabletoc=1&redirects=1&formatversion=2&format=json&origin=*&page=' + encode(word), timeout);
 
     return Promise.all([enP, jaP]).then(function (r) {
       var en = r[0], ja = r[1];
@@ -769,7 +814,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
       var sec = null;
       for (var k = 0; k < jaSecs.length; k++) if (jaSecs[k].pos === primaryPos) { sec = jaSecs[k]; break; }
       if (!sec && !primaryPos && jaSecs.length) sec = jaSecs[0];
-      if (sec) { meaning = joinGlosses(sec.glosses); pos = sec.pos; src.meaning = 'ja.wiktionary'; src.pos = primaryPos ? 'en.wiktionary' : 'ja.wiktionary'; }
+      if (sec) { meaning = joinGlosses(sec.glosses.slice(0, 3)); pos = sec.pos; src.meaning = 'ja.wiktionary'; src.pos = primaryPos ? 'en.wiktionary' : 'ja.wiktionary'; }
 
       // 例文（en.wiktionary → 無ければ後で Tatoeba）
       var example = entries.length ? pickEnExample(entries, pos) : null;
@@ -809,7 +854,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
 
         // 主品詞の語釈が ja.wiktionary に無く MyMemory も駄目だった場合の最後の手段: ja の別品詞の節を、その品詞ごと採用
         if (!meaning && jaSecs.length) {
-          meaning = joinGlosses(jaSecs[0].glosses); pos = jaSecs[0].pos; src.meaning = 'ja.wiktionary'; src.pos = 'ja.wiktionary';
+          meaning = joinGlosses(jaSecs[0].glosses.slice(0, 3)); pos = jaSecs[0].pos; src.meaning = 'ja.wiktionary'; src.pos = 'ja.wiktionary';
           if (src.example === 'en.wiktionary') example = pickEnExample(entries, pos) || example;
         }
 
@@ -826,13 +871,51 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
             not_found: '「' + word + '」は辞書に見つかりませんでした（綴りを確認してください）', unavailable: '辞書サービスに接続できません。時間をおいて再試行してください' }[kind];
           throw LookupError(kind, msg, detail);
         }
+        // 新フィールド entries: ja.wiktionary の全品詞・全語釈。品詞ごとの例文は en.wiktionary の同じ品詞のものだけ
+        var outEntries = jaSecs.map(function (sc) {
+          var ex = entries.length ? pickEnExample(entries, sc.pos, true) : null;
+          return { pos: sc.pos, senses: sc.glosses.map(function (g) { return { ja: g, example: null }; }), example: ex, exampleSource: ex ? 'en.wiktionary' : null };
+        });
+        if (!outEntries.length && meaning && src.meaning === 'mymemory') {   // 機械翻訳の一語訳だけ（machine:true）
+          var mex = primaryPos && entries.length ? pickEnExample(entries, primaryPos, true) : null;
+          outEntries.push({ pos: primaryPos || null, senses: [{ ja: meaning, example: null, machine: true }], example: mex, exampleSource: mex ? 'en.wiktionary' : null });
+        }
+        // 語全体で品詞が1つしかない場合に限り、Tatoeba の例文（品詞不明）もその品詞の例文として使える（他に紛れる品詞が無いため）
+        if (src.example === 'tatoeba' && example) {
+          var posSet = {};
+          outEntries.forEach(function (e) { posSet[e.pos] = 1; });
+          entries.forEach(function (e) { if (!e.isFormOf) posSet[e.pos] = 1; });
+          if (Object.keys(posSet).length === 1) outEntries.forEach(function (e) { if (!e.example) { e.example = example; e.exampleSource = 'tatoeba'; } });
+        }
+        // coverage: 品詞ごとの「ja.wiktionaryから取れた語釈数」と「en.wiktionaryにある語義数」。取りこぼしの目安（UIで手入力欄を出す判断に使える）
+        var cov = {}, covOrder = [];
+        function covOf(p) { if (!cov[p]) { cov[p] = { pos: p, ja: 0, en: 0 }; covOrder.push(cov[p]); } return cov[p]; }
+        outEntries.forEach(function (e) { covOf(e.pos).ja += e.senses.filter(function (x) { return !x.machine; }).length; });
+        entries.forEach(function (e) { if (!e.isFormOf) covOf(e.pos).en += e.real.length; });
+        // [Wordbook patch 2026-10-02] 日本語の語釈が1件もない品詞は、英語版の定義で補う（機械翻訳はしない）。
+        // 日本語の語釈がある品詞には足さない。補った語釈は { ja:null, en:'…' }。coverage の計算より後なので ja の件数には入らない。
+        var hasJa = {};
+        outEntries.forEach(function (e) { if (e.senses.length) hasJa[e.pos] = 1; });
+        var enAdd = {};
+        entries.forEach(function (e) {
+          if (e.isFormOf || hasJa[e.pos] || !e.real.length) return;
+          if (!enAdd[e.pos]) {
+            var enEx = pickEnExample(entries, e.pos, true);
+            enAdd[e.pos] = { pos: e.pos, senses: [], example: enEx, exampleSource: enEx ? 'en.wiktionary' : null };
+            outEntries.push(enAdd[e.pos]);
+          }
+          e.real.forEach(function (d) { enAdd[e.pos].senses.push({ ja: null, en: d.text, example: null }); });
+        });
         return {
           word: word,
+          entries: outEntries,
+          coverage: covOrder,
           meaning: meaning || null,
           pos: pos || null,
           example: example || null,
           source: src,
           partial: !(meaning && pos && example),
+          incomplete: !(ja.ok || ja.kind === 'not_found') || !(en.ok || en.kind === 'not_found'),   // 取得元の障害・制限で語釈や品詞が欠けている可能性（再取得を促せる）
           detail: detail
         };
       });
@@ -845,7 +928,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
     return lookupOnce(word, opts || {}, 0);
   }
 
-  return { lookupWord: lookupWord, normalizeWord: normalizeWord, _internals: { parseEn: parseEn, parseJa: parseJa, pickMyMemory: pickMyMemory, pickTatoeba: pickTatoeba, pickEnExample: pickEnExample } };
+  return { lookupWord: lookupWord, normalizeWord: normalizeWord, _internals: { parseEn: parseEn, parseJa: parseJa, pickMyMemory: pickMyMemory, pickTatoeba: pickTatoeba, pickEnExample: pickEnExample, cleanGloss: cleanGloss } };
 }));
 </script>
 <script>
@@ -854,29 +937,33 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1.5
 
 /* =====================================================================
    Dictionary lookup — the ONE integration point for auto-fill.
-   window.Wordbook.lookupWord(word) -> Promise of
-     { meaning, pos, example, lemma?, source: {meaning, pos, example}, partial }
-   (fields the dictionary did not have are null), or rejects with an Error
-   whose .kind is 'offline' | 'not_found' | 'rate_limit' | 'unavailable' | 'invalid_input'.
-   The default is the inlined lookup.js above. Assign a different function to
-   window.Wordbook.lookupWord to swap it; autofill() is its only caller.
+   window.Wordbook.lookupWord(word) -> Promise of the lookup.js result
+     { entries:[{pos, senses:[{ja}|{en}], example}], incomplete, meaning, pos, example, source, lemma? }
+   or rejects with Error.kind 'offline' | 'not_found' | 'rate_limit' | 'unavailable' | 'invalid_input'.
+   Lookups run one at a time, at least lookupGapMs apart (ja.wiktionary answers 429 after ~10 quick calls).
    ===================================================================== */
-window.Wordbook = { lookupWord: word => window.lookupWord(word) };
+window.Wordbook = {
+  lookupWord: word => window.lookupWord(word, { timeoutMs: 6000 }),
+  lookupGapMs: 8000
+};
 
 /* ================= Data ================= */
-// Storage format is unchanged from v1: an array of word objects under 'wordbook.v1'.
+// Storage key and the v1 fields are unchanged. v4 adds optional fields:
+//   entries (all senses by part of speech), incomplete, state ('pending' | 'failed'), manual, src
 const KEY = 'wordbook.v1';
-const DAYS_KEY = 'wordbook.days'; // review days, local dates 'YYYY-MM-DD'
+const DAYS_KEY = 'wordbook.days';
+const VOICE_KEY = 'wordbook.voice';
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const SRC_OK = { meaning: ['ja.wiktionary', 'mymemory', 'manual'], pos: ['en.wiktionary', 'ja.wiktionary', 'manual'], example: ['en.wiktionary', 'tatoeba'] };
+const EX_SRC = ['en.wiktionary', 'tatoeba'];
 // filled in at start-up (bottom of this script), after every helper below exists
 let words = [];
 let days = new Set();
 let filter = 'all';
 let query = '';
-const open = new Set();
+const open = new Set();      // expanded List rows
+const moreOpen = new Set();  // "+N more" opened, key = id + ':' + entry index
 
-// Reads the saved words. A bad item is skipped, never the whole list; if the stored
-// text cannot be parsed at all, it is copied aside first so the next save cannot erase it.
 function load() {
   let raw = null;
   try { raw = localStorage.getItem(KEY); } catch (e) { return []; }
@@ -891,6 +978,8 @@ function load() {
   for (const item of data) {
     try { const w = normalize(item); if (w) out.push(w); } catch (e) {}
   }
+  // a lookup cannot survive a reload: anything still pending becomes "not fetched" (Retry)
+  out.forEach(w => { if (w.state === 'pending') w.state = 'failed'; });
   return out;
 }
 function save() {
@@ -911,13 +1000,32 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
 function str(v) { return typeof v === 'string' ? v.trim() : ''; }
-// where an auto-filled field came from (optional; words saved by v1 have none)
-const SRC_OK = { meaning: ['ja.wiktionary', 'mymemory'], pos: ['en.wiktionary', 'ja.wiktionary'], example: ['en.wiktionary', 'tatoeba'] };
 function normSrc(s) {
   if (!s || typeof s !== 'object') return null;
   const o = {};
   for (const k in SRC_OK) if (SRC_OK[k].includes(s[k])) o[k] = s[k];
   return Object.keys(o).length ? o : null;
+}
+function normEntries(a) {
+  if (!Array.isArray(a)) return null;
+  const out = [];
+  for (const e of a) {
+    if (!e || typeof e !== 'object') continue;
+    const senses = (Array.isArray(e.senses) ? e.senses : []).map(s => {
+      if (!s || typeof s !== 'object') return null;
+      const ja = str(s.ja), en = str(s.en);
+      if (!ja && !en) return null;
+      const o = ja ? { ja } : { en };
+      if (s.machine === true) o.machine = true;
+      return o;
+    }).filter(Boolean);
+    if (!senses.length) continue;
+    const o = { pos: str(e.pos), senses };
+    const ex = str(e.example);
+    if (ex) { o.example = ex; if (EX_SRC.includes(e.exampleSource)) o.exampleSource = e.exampleSource; }
+    out.push(o);
+  }
+  return out.length ? out : null;
 }
 function normalize(w) {
   if (!w || typeof w !== 'object') return null;
@@ -925,8 +1033,8 @@ function normalize(w) {
   if (!word) return null;
   const now = Date.now();
   const src = normSrc(w.src);
-  return {
-    ...(src ? { src } : {}),
+  const entries = normEntries(w.entries);
+  const o = {
     id: str(w.id) || uid(),
     word,
     meaning: str(w.meaning),
@@ -937,12 +1045,37 @@ function normalize(w) {
     createdAt: Number(w.createdAt) || now,
     updatedAt: Number(w.updatedAt) || Number(w.createdAt) || now
   };
+  if (src) o.src = src;
+  if (entries) o.entries = entries;
+  if (w.incomplete === true) o.incomplete = true;
+  if (w.manual === true) o.manual = true;
+  if (w.state === 'pending' || w.state === 'failed') o.state = w.state;
+  if (o.state === 'failed' && ['offline', 'rate_limit', 'unavailable'].includes(w.failKind)) o.failKind = w.failKind;
+  return o;
 }
 function byId(id) { return words.find(w => w.id === id); }
 function numbering() {
   const m = new Map();
   [...words].sort((a, b) => a.createdAt - b.createdAt).forEach((w, i) => m.set(w.id, i + 1));
   return m;
+}
+// what to show: saved entries, or (words from v1-v3) the old meaning / pos / example strings
+function viewEntries(w) {
+  if (w.entries) return w.entries;
+  if (!w.meaning && !w.example) return [];
+  const senses = w.meaning ? w.meaning.split(' / ').map(s => s.trim()).filter(Boolean).map(ja => ({ ja })) : [];
+  return [{ pos: w.pos, senses: senses.length ? senses : [], example: w.example }];
+}
+const isLegacy = w => !w.entries && !w.manual && !w.state;
+function summary(w) {
+  const e = viewEntries(w)[0];
+  if (!e) return '';
+  return e.senses.slice(0, 3).map(s => s.ja || s.en).join(' / ');
+}
+function allText(w) {
+  const parts = [w.word, w.meaning, w.pos, w.example, w.note];
+  viewEntries(w).forEach(e => { parts.push(e.pos, e.example || ''); e.senses.forEach(s => parts.push(s.ja || s.en)); });
+  return parts.filter(Boolean).join('\n').toLowerCase();
 }
 
 /* ================= Days & streak (device local time) ================= */
@@ -962,36 +1095,57 @@ function streak() {
   return n;
 }
 
-/* ================= Speech ================= */
-// iOS Safari: voices arrive asynchronously, speak() must run inside a user gesture,
-// and the utterance must stay referenced or it can be cut off. Novelty voices are en-US too.
+/* ================= Speech (male English voice first) ================= */
+// Voice names differ per device. Male candidates by platform (names are guesses until heard on the device):
+//   iOS / macOS: Aaron, Nathan, Evan, Tom, Alex, Daniel (en-GB), Arthur (en-GB), Oliver (en-GB), Gordon (en-AU), Lee (en-AU), Rishi (en-IN)
+//   Windows / Edge: Microsoft Andrew, Guy, Brian, Christopher, Eric, Roger, Steffan, Davis, Jason, Tony, David, Mark
+//   Chrome desktop: Google UK English Male.  Android voices do not expose gender -> falls back to en-US default.
 const Speech = {
   ok: 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window,
   voice: null, current: null, btn: null,
   NOVELTY: /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|kathy|ralph|grandma|grandpa|eddy|flo|reed|rocko|sandy|shelley/i,
+  MALE: [/^aaron\b/i, /^nathan\b/i, /^evan\b/i, /^tom\b/i,
+    /microsoft (andrew|guy|brian|christopher|eric|roger|steffan|davis|jason|tony|david|mark)\b/i,
+    /^alex\b/i, /google uk english male/i, /^(daniel|arthur|oliver|gordon|lee|rishi)\b/i],
+  english() {
+    if (!this.ok) return [];
+    return (speechSynthesis.getVoices() || [])
+      .filter(v => /^en([-_]|$)/i.test(v.lang || '') && !this.NOVELTY.test(v.name));
+  },
+  isUS: v => (v.lang || '').replace('_', '-').toLowerCase() === 'en-us',
+  preferred() {
+    const en = this.english();
+    const us = en.filter(this.isUS);
+    for (const re of this.MALE) {
+      const v = us.find(x => re.test(x.name)) || en.find(x => re.test(x.name));
+      if (v) return v;
+    }
+    return us.find(x => x.localService) || us[0] || en[0] || null; // no male voice: the en-US default
+  },
   pick() {
     if (!this.ok) return;
-    const vs = speechSynthesis.getVoices() || [];
-    const en = vs.filter(v => (v.lang || '').replace('_', '-').toLowerCase() === 'en-us');
-    const plain = en.filter(v => !this.NOVELTY.test(v.name));
-    const pool = plain.length ? plain : en;
-    const prefer = [/samantha/i, /google us english/i, /aria/i, /jenny/i, /zira/i, /alex/i];
-    let v = null;
-    for (const re of prefer) { v = pool.find(x => re.test(x.name)); if (v) break; }
-    this.voice = v || pool.find(x => x.localService) || pool[0] || null;
+    let saved = null;
+    try { saved = localStorage.getItem(VOICE_KEY); } catch (e) {}
+    const en = this.english();
+    this.voice = (saved && en.find(v => v.voiceURI === saved)) || this.preferred();
+  },
+  choose(uri) {
+    try { if (uri) localStorage.setItem(VOICE_KEY, uri); else localStorage.removeItem(VOICE_KEY); } catch (e) {}
+    this.pick();
   },
   init() {
     if (!this.ok) return;
     this.pick();
-    if (typeof speechSynthesis.addEventListener === 'function') speechSynthesis.addEventListener('voiceschanged', () => this.pick());
-    else speechSynthesis.onvoiceschanged = () => this.pick();
+    const onChange = () => { this.pick(); if (current === 'list') renderVoice(); };
+    if (typeof speechSynthesis.addEventListener === 'function') speechSynthesis.addEventListener('voiceschanged', onChange);
+    else speechSynthesis.onvoiceschanged = onChange;
   },
   speak(text, btn) {
     if (!this.ok || !text) return;
     if (!this.voice) this.pick();
     if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US';
+    u.lang = this.voice ? this.voice.lang.replace('_', '-') : 'en-US';
     if (this.voice) u.voice = this.voice;
     u.rate = 0.92; u.pitch = 1;
     this.mark(btn);
@@ -1007,7 +1161,6 @@ const Speech = {
     if (this.btn) this.btn.classList.add('speaking');
   }
 };
-Speech.init();
 
 /* ================= Helpers ================= */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1044,6 +1197,466 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.remove(), 2600);
 }
+Object.assign(ICON, {
+  x: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',
+  tick: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg>'
+});
+
+/* ================= Entries (shared by Add, List and Review) ================= */
+const SHOW = 8; // senses shown per part of speech before "+N more"
+function entriesHTML(w, where) {
+  const ents = viewEntries(w);
+  if (!ents.length) return '';
+  return `<div class="ents">${ents.map((e, i) => {
+    const key = w.id + ':' + i;
+    const all = moreOpen.has(key);
+    const shown = all ? e.senses : e.senses.slice(0, SHOW);
+    const rest = e.senses.length - shown.length;
+    return `<section class="ent">
+      ${e.pos ? `<div class="ent-pos">${esc(e.pos)}</div>` : ''}
+      ${shown.length ? `<ol class="senses">${shown.map(s => `<li>${s.en ? `<span class="en-tag" title="English definition from Wiktionary">EN</span><span class="en-text">${esc(s.en)}</span>` : esc(s.ja)}</li>`).join('')}</ol>` : ''}
+      ${rest > 0 ? `<button class="more" data-act="more" data-k="${esc(key)}">+${rest} more</button>` : ''}
+      ${e.example ? `<div class="ent-ex"><p>${esc(e.example)}</p>${speakBtn(e.example, 'Read the example aloud', 'small')}</div>` : ''}
+    </section>`;
+  }).join('')}</div>`;
+}
+
+/* ================= Lookup queue ================= */
+const Q = { chain: Promise.resolve(), lastStart: -Infinity, waiting: new Set(), active: null };
+const gapMs = () => { const g = Number(window.Wordbook.lookupGapMs); return isFinite(g) && g >= 0 ? g : 8000; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function queueLookup(id) {
+  if (Q.waiting.has(id) || Q.active === id) return Q.chain;
+  const w = byId(id);
+  if (!w) return Q.chain;
+  w.state = 'pending'; delete w.failKind; save();
+  Q.waiting.add(id);
+  refreshWordViews();
+  const p = Q.chain.then(async () => {
+    const wait = Q.lastStart + gapMs() - performance.now(); // performance.now: steady even if the wall clock jumps
+    if (wait > 0) await sleep(wait);
+    Q.waiting.delete(id);
+    if (!byId(id)) return;
+    Q.active = id; refreshWordViews();
+    Q.lastStart = performance.now();
+    try { await fetchInto(id); } finally { Q.active = null; refreshWordViews(); }
+  });
+  Q.chain = p.catch(() => {});
+  return p;
+}
+// asks the dictionary and stores the result on the word
+async function fetchInto(id) {
+  const w = byId(id);
+  if (!w) return;
+  let res = null, kind = null;
+  try { res = await window.Wordbook.lookupWord(w.word); }
+  catch (e) { kind = (e && e.kind) || 'unavailable'; }
+  if (!kind && (!res || typeof res !== 'object')) kind = 'unavailable';
+  const cur = byId(id);
+  if (!cur) return;
+  if (kind === 'not_found' || kind === 'invalid_input') {
+    // not a word the dictionary knows: it is not kept (the user can "Add anyway")
+    words = words.filter(x => x.id !== id);
+    save();
+    noHit(cur.word, id);
+    return;
+  }
+  if (kind) {
+    cur.state = 'failed'; cur.failKind = kind === 'offline' || kind === 'rate_limit' ? kind : 'unavailable';
+    save();
+    return;
+  }
+  const entries = normEntries(res && res.entries);
+  delete cur.state; delete cur.failKind;
+  if (entries) cur.entries = entries; else delete cur.entries;
+  cur.meaning = str(res.meaning) || (entries ? entries[0].senses.slice(0, 3).map(s => s.ja || s.en).join(' / ') : cur.meaning);
+  cur.pos = str(res.pos) || (entries ? entries[0].pos : cur.pos);
+  cur.example = str(res.example) || cur.example;
+  const src = normSrc(res.source);
+  if (src) cur.src = src; else delete cur.src;
+  if (res.incomplete === true) cur.incomplete = true; else delete cur.incomplete;
+  delete cur.manual;
+  cur.updatedAt = Date.now();
+  save();
+}
+function refreshWordViews() {
+  if (current === 'add') renderRecent();
+  if (current === 'list') { const y = $('#s-list').scrollTop; renderResults(); $('#s-list').scrollTop = y; }
+}
+// back online: fetch what could not be fetched (the queue keeps the spacing)
+window.addEventListener('online', () => {
+  words.filter(w => w.state === 'failed').slice(0, 10).forEach(w => queueLookup(w.id));
+});
+
+/* ================= Add ================= */
+let recent = [];        // ids added in this session, newest first
+let addMsg = null;      // { kind: 'nohit' | 'invalid' | 'dup', word }
+let manualOpen = false;
+
+function renderAdd() {
+  const el = $('#s-add');
+  if (!$('#add-form', el)) {
+    el.innerHTML = `${topBar()}
+    <div class="wrap add">
+      <form class="add-row" id="add-form" novalidate autocomplete="off">
+        <input id="add-word" type="text" placeholder="English word" aria-label="English word"
+          autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done">
+        <button class="btn solid" type="submit">Add</button>
+      </form>
+      <div id="add-msg" aria-live="polite"></div>
+      <ol class="recent" id="add-recent" aria-live="polite"></ol>
+    </div>`;
+    $('#add-form').addEventListener('submit', e => { e.preventDefault(); addWord(); });
+  }
+  renderAddMsg();
+  renderRecent();
+}
+function renderAddMsg() {
+  const box = $('#add-msg');
+  if (!box) return;
+  if (!addMsg) { box.innerHTML = ''; return; }
+  if (addMsg.kind === 'nohit') {
+    box.innerHTML = `<div class="nohit">
+      <p class="nohit-t">No hit</p>
+      ${manualOpen ? `<form class="manual" id="manual-form" novalidate autocomplete="off">
+          <input name="meaning" type="text" placeholder="Meaning" aria-label="Meaning of ${esc(addMsg.word)}">
+          <input name="pos" type="text" placeholder="Part of speech (optional)" aria-label="Part of speech" autocapitalize="none">
+          <button class="btn solid" type="submit">Save</button>
+        </form>`
+      : `<button class="small-btn" data-act="add-anyway">Add anyway</button>`}
+    </div>`;
+    const f = $('#manual-form');
+    if (f) { f.addEventListener('submit', e => { e.preventDefault(); saveManual(); }); f.meaning.focus(); }
+  } else if (addMsg.kind === 'invalid') {
+    box.innerHTML = `<p class="nohit-t">Not an English word</p>`;
+  } else if (addMsg.kind === 'dup') {
+    box.innerHTML = `<p class="muted">Already in your list.</p>`;
+  }
+}
+function stateLine(w) {
+  if (Q.active === w.id) return '<p class="wstate busy">Looking up…</p>';
+  if (w.state === 'pending') return '<p class="wstate">Saved. Meaning will be added shortly.</p>';
+  if (w.state === 'failed') {
+    const why = { offline: 'offline', rate_limit: 'dictionary busy', unavailable: 'dictionary unreachable' }[w.failKind || 'unavailable'];
+    return `<p class="wstate">Saved. Meaning not fetched (${why}).</p><button class="small-btn" data-act="retry" data-id="${esc(w.id)}">Retry</button>`;
+  }
+  if (w.incomplete) return `<button class="small-btn" data-act="retry" data-id="${esc(w.id)}">Retry</button>`;
+  return '';
+}
+function renderRecent() {
+  const box = $('#add-recent');
+  if (!box) return;
+  recent = recent.filter(id => byId(id));
+  box.innerHTML = recent.map((id, i) => {
+    const w = byId(id);
+    return `<li class="recent-item ${i ? 'older' : ''}" data-id="${esc(w.id)}">
+      <div class="recent-head"><span class="recent-word">${esc(w.word)}</span>${speakBtn(w.word, 'Pronounce ' + w.word, 'small')}</div>
+      ${stateLine(w)}
+      ${i === 0 ? entriesHTML(w, 'add') : (summary(w) ? `<p class="recent-sum">${esc(summary(w))}</p>` : '')}
+    </li>`;
+  }).join('');
+}
+function validWord(text) {
+  const n = window.lookupWord && window.lookupWord.normalizeWord;
+  if (!n) return true;
+  try { n(text); return true; } catch (e) { return false; }
+}
+function addWord() {
+  const input = $('#add-word');
+  const text = input.value.trim().replace(/\s+/g, ' ');
+  manualOpen = false;
+  if (!text) { addMsg = null; renderAddMsg(); input.focus(); return; }
+  const dup = words.find(w => w.word.toLowerCase() === text.toLowerCase());
+  if (dup) {
+    addMsg = { kind: 'dup', word: text };
+    recent = [dup.id, ...recent.filter(x => x !== dup.id)];
+    input.value = '';
+    renderAddMsg(); renderRecent();
+    return;
+  }
+  if (!validWord(text)) { addMsg = { kind: 'invalid', word: text }; renderAddMsg(); return; }
+  const now = Date.now();
+  const w = normalize({ id: uid(), word: text, createdAt: now, updatedAt: now, state: 'pending' });
+  words.push(w);
+  save(); // saved at once, so nothing is lost if the lookup cannot run
+  recent = [w.id, ...recent].slice(0, 6);
+  addMsg = null;
+  input.value = '';
+  renderAddMsg();
+  queueLookup(w.id);
+}
+function noHit(word, id) {
+  recent = recent.filter(x => x !== id);
+  addMsg = { kind: 'nohit', word };
+  manualOpen = false;
+  if (current === 'add') {
+    const input = $('#add-word');
+    if (input && !input.value) input.value = word; // put the spelling back so it can be fixed
+    renderAddMsg(); renderRecent();
+  }
+}
+function saveManual() {
+  const f = $('#manual-form');
+  if (!f || !addMsg) return;
+  const meaning = f.meaning.value.trim();
+  if (!meaning) { f.meaning.focus(); return; }
+  const pos = f.pos.value.trim();
+  const now = Date.now();
+  const w = normalize({
+    id: uid(), word: addMsg.word, meaning, pos, createdAt: now, updatedAt: now, manual: true,
+    entries: [{ pos, senses: [{ ja: meaning }] }], src: { meaning: 'manual', ...(pos ? { pos: 'manual' } : {}) }
+  });
+  words.push(w); save();
+  recent = [w.id, ...recent].slice(0, 6);
+  addMsg = null; manualOpen = false;
+  const input = $('#add-word'); if (input) input.value = '';
+  renderAddMsg(); renderRecent();
+}
+
+/* ================= List ================= */
+function visible() {
+  const q = query.trim().toLowerCase();
+  return words
+    .filter(w => filter === 'all' || (filter === 'learned' ? w.learned : !w.learned))
+    .filter(w => !q || allText(w).includes(q))
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+function resultsHTML() {
+  const total = words.length;
+  const list = visible();
+  const nums = numbering();
+  if (!total) return `<section class="empty-state"><h2>No words yet.</h2><p>Add words from the Add tab.</p></section>`;
+  if (!list.length) {
+    const what = query.trim() ? `Nothing matches “${esc(query.trim())}”.` : (filter === 'learned' ? 'Nothing learned yet.' : 'Every word is learned.');
+    return `<section class="empty-state"><h2>${what}</h2></section>`;
+  }
+  return `<div class="list-head"><span class="label">${plural(list.length, 'entry', 'entries')}</span><span class="label">Newest first</span></div>
+    <ol class="entries">${list.map(w => entryHTML(w, nums.get(w.id))).join('')}</ol>`;
+}
+const SOURCES = {
+  wiktionary: { name: 'Wiktionary', url: 'https://www.wiktionary.org/', what: 'meanings, parts of speech and examples', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/' },
+  tatoeba: { name: 'Tatoeba', url: 'https://tatoeba.org/', what: 'example sentences', license: 'CC BY 2.0 FR', licenseUrl: 'https://creativecommons.org/licenses/by/2.0/fr/' },
+  mymemory: { name: 'MyMemory', url: 'https://mymemory.translated.net/', what: 'machine-translated meanings', license: '', licenseUrl: '' }
+};
+const srcGroup = s => (s === 'tatoeba' ? 'tatoeba' : s === 'mymemory' ? 'mymemory' : s === 'manual' ? 'manual' : 'wiktionary');
+function sourcesUsed() {
+  const used = new Set();
+  words.forEach(w => {
+    if (w.src) Object.values(w.src).forEach(s => used.add(srcGroup(s)));
+    (w.entries || []).forEach(e => { if (e.exampleSource) used.add(srcGroup(e.exampleSource)); if (e.senses.some(s => s.en)) used.add('wiktionary'); });
+  });
+  return Object.keys(SOURCES).filter(k => used.has(k));
+}
+function sourcesHTML() {
+  const used = sourcesUsed();
+  if (!used.length) return '';
+  return `<section class="sources"><div class="label">Sources</div>
+    <ul>${used.map(k => { const s = SOURCES[k]; return `<li><a href="${s.url}" target="_blank" rel="noopener">${s.name}</a> — ${s.what}${s.license ? `, <a href="${s.licenseUrl}" target="_blank" rel="noopener">${s.license}</a>` : ''}</li>`; }).join('')}</ul></section>`;
+}
+function srcLine(w) {
+  if (w.manual) return '<p class="src-line">Meaning: Manual</p>';
+  if (!w.src) return '';
+  const parts = [];
+  if (w.src.meaning) parts.push('Meaning: ' + (w.src.meaning === 'manual' ? 'Manual' : SOURCES[srcGroup(w.src.meaning)].name));
+  const exSrc = (w.entries || []).map(e => e.exampleSource).find(Boolean) || w.src.example;
+  if (exSrc) parts.push('Example: ' + SOURCES[srcGroup(exSrc)].name);
+  return parts.length ? `<p class="src-line">${parts.join(' · ')}</p>` : '';
+}
+function statHTML(key, n, label) {
+  return `<button class="stat" data-act="filter" data-f="${key}" aria-pressed="${filter === key}"><span class="n num">${n}</span><span class="label">${label}</span></button>`;
+}
+function entryHTML(w, no) {
+  const isOpen = open.has(w.id);
+  const sum = summary(w);
+  const firstPos = (viewEntries(w)[0] || {}).pos || w.pos;
+  const pending = w.state === 'pending' || Q.active === w.id;
+  return `<li class="entry" data-id="${esc(w.id)}">
+    <div class="entry-head">
+      <button class="entry-main" data-act="toggle" aria-expanded="${isOpen}">
+        <span class="entry-no num">${pad(no)}</span>
+        <span><span class="entry-word">${esc(w.word)}</span>${firstPos ? `<span class="entry-pos">${esc(firstPos)}</span>` : ''}</span>
+        <span class="entry-meaning ${sum ? '' : 'empty'}">${sum ? esc(sum) : (pending ? 'Meaning will be added shortly' : 'No meaning yet')}</span>
+      </button>
+      ${speakBtn(w.word, 'Pronounce ' + w.word) || '<span></span>'}
+      <button class="icon-btn" data-act="learn" aria-pressed="${w.learned}" aria-label="${w.learned ? 'Learned. Mark as not yet' : 'Not yet. Mark as learned'}"><span class="mark">${ICON.check}</span></button>
+    </div>
+    ${isOpen ? `<div class="entry-body">
+      ${stateLine(w)}
+      ${entriesHTML(w, 'list')}
+      <label class="note-fld"><span class="label">My note</span>
+        <textarea rows="2" data-note="${esc(w.id)}" placeholder="Write a note">${esc(w.note)}</textarea></label>
+      ${srcLine(w)}
+      <div class="entry-actions">
+        ${isLegacy(w) && !pending ? `<button class="small-btn" data-act="retry" data-id="${esc(w.id)}">Refresh</button>` : ''}
+        <button class="text-btn danger" data-act="delete">Delete</button>
+      </div>
+    </div>` : ''}
+  </li>`;
+}
+function renderList() {
+  const total = words.length;
+  const learned = words.filter(w => w.learned).length;
+  const el = $('#s-list');
+  const y = el.scrollTop;
+  el.innerHTML = `${topBar()}
+  <div class="wrap">
+    <h1 class="screen-title">List</h1>
+    <div class="stats" role="group" aria-label="Filter">
+      ${statHTML('all', total, 'All words')}${statHTML('notyet', total - learned, 'Not yet')}${statHTML('learned', learned, 'Learned')}
+    </div>
+    ${total ? `<div class="search"><label class="search-row">${ICON.search}
+      <input id="q" type="search" value="${esc(query)}" placeholder="Search words, meanings, notes" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search">
+      <button class="clear-btn" data-act="clear" aria-label="Clear search" ${query ? '' : 'hidden'}>${ICON.close}</button>
+    </label></div>` : ''}
+    <div id="results">${resultsHTML()}</div>
+    <section class="data"><div class="label">Data</div>
+      <p>Words are saved in this browser only. Export a JSON file to back them up or move them to another device.</p>
+      <div class="data-actions">
+        <button class="text-btn" data-act="export" ${total ? '' : 'disabled'}>Export JSON</button>
+        <button class="text-btn" data-act="import">Import JSON</button>
+      </div>
+    </section>
+    <section class="voice" id="voice"></section>
+    ${sourcesHTML()}
+    <footer class="colophon label">Wordbook &middot; Stored locally${Speech.ok ? '' : ' &middot; Speech not supported here'}</footer>
+  </div>`;
+  renderVoice();
+  el.scrollTop = y;
+}
+function renderResults() {
+  const r = $('#results'); if (!r) return;
+  r.innerHTML = resultsHTML();
+  const c = $('#s-list .clear-btn'); if (c) c.hidden = !query;
+}
+function renderVoice() {
+  const box = $('#voice');
+  if (!box) return;
+  if (!Speech.ok) { box.innerHTML = ''; return; }
+  const vs = Speech.english();
+  const cur = Speech.voice;
+  box.innerHTML = `<div class="label">Voice</div>
+    <div class="voice-row">
+      <select id="voice-sel" aria-label="Voice">${vs.length ? vs.map(v => `<option value="${esc(v.voiceURI)}" ${cur && v.voiceURI === cur.voiceURI ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('') : '<option>Default</option>'}</select>
+      <button class="text-btn" data-act="voice-test">Play</button>
+    </div>`;
+}
+
+/* ================= Review ================= */
+const R = { deck: [], pos: 0, back: false, got: 0, miss: 0, missed: [], busy: false };
+function rvVar(name, d) { const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)); return isFinite(v) ? v : d; }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function startDeck(ids) { R.deck = shuffle(ids.slice()); R.pos = 0; R.back = false; R.got = 0; R.miss = 0; R.missed = []; }
+function enterReview() {
+  R.deck = R.deck.filter(id => byId(id));
+  if (!R.deck.length) {
+    const notyet = words.filter(w => !w.learned).map(w => w.id);
+    startDeck(notyet.length ? notyet : words.map(w => w.id));
+  }
+}
+function renderReview() {
+  const el = $('#s-review');
+  if (!$('#rv-stage', el)) {
+    el.innerHTML = `${topBar()}
+      <div class="rv wrap">
+        <div class="rv-stage" id="rv-stage"><div id="rv-card-slot"></div></div>
+        <div class="rv-judge" id="rv-judge">
+          <button class="judge miss" data-act="judge" data-v="miss" aria-label="Not yet">${ICON.x}</button>
+          <button class="judge got" data-act="judge" data-v="got" aria-label="Got it">${ICON.tick}</button>
+        </div>
+      </div>`;
+  }
+  renderCard();
+}
+function countsHTML() {
+  return `<span class="rv-counts"><span class="c-miss">✗ ${R.miss}</span><span class="c-got">✓ ${R.got}</span></span>`;
+}
+function renderCard() {
+  const slot = $('#rv-card-slot');
+  if (!slot) return;
+  while (R.pos < R.deck.length && !byId(R.deck[R.pos])) R.pos++;
+  const total = R.deck.length;
+  const judge = $('#rv-judge');
+  if (!words.length) {
+    slot.innerHTML = `<div class="rv-card rv-done"><div class="rv-face"><p class="done-big">No words yet.</p></div></div>`;
+    judge.hidden = true; return;
+  }
+  if (R.pos >= total) {
+    slot.innerHTML = `<div class="rv-card rv-done"><div class="rv-face">
+      <p class="done-big num">${total}</p>
+      <p class="done-counts"><span class="c-got">✓ ${R.got}</span><span class="c-miss">✗ ${R.miss}</span></p>
+      <div class="done-actions">
+        ${R.missed.length ? `<button class="btn solid" data-act="rv-again">Again</button>` : ''}
+        <button class="btn" data-act="rv-done">Done</button>
+      </div></div></div>`;
+    judge.hidden = true; return;
+  }
+  judge.hidden = false;
+  const w = byId(R.deck[R.pos]);
+  const top = `<div class="rv-top"><span class="rv-no num">${R.pos + 1} / ${total}</span>${countsHTML()}</div>`;
+  slot.innerHTML = `<div class="rv-card ${R.back ? 'is-back' : ''}" id="rv-card" data-act="flip" role="button" aria-label="${R.back ? 'Show the word' : 'See answer'}">
+    ${R.back
+      ? `<div class="rv-face rv-back">${top}<p class="rv-back-word">${esc(w.word)}</p>
+          <div class="rv-scroll">${entriesHTML(w, 'review') || '<p class="muted">No meaning yet.</p>'}</div></div>`
+      : `<div class="rv-face rv-front">${top}
+          <div class="rv-word-wrap"><p class="rv-word">${esc(w.word)}</p>${speakBtn(w.word, 'Pronounce ' + w.word, 'rv-say')}</div>
+          <p class="rv-hint">See answer</p></div>`}
+  </div>`;
+}
+function flipCard() {
+  const card = $('#rv-card');
+  if (!card || R.busy) return;
+  const toBack = !R.back;
+  if (toBack) markToday(); // a card flipped to its answer counts as reviewing today
+  if (reduced()) { R.back = toBack; renderCard(); return; }
+  const total = rvVar('--rv-flip-ms', 200);
+  R.busy = true;
+  const out = card.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: total * 0.4, easing: 'cubic-bezier(.5,0,1,1)', fill: 'forwards' });
+  out.onfinish = () => {
+    R.back = toBack;
+    renderCard();
+    const c2 = $('#rv-card');
+    const inn = c2.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: total * 0.6, easing: 'cubic-bezier(0,0,.2,1)' });
+    inn.onfinish = inn.oncancel = () => { R.busy = false; };
+  };
+}
+function judge(v) {
+  if (R.pos >= R.deck.length) return;
+  const w = byId(R.deck[R.pos]);
+  if (!w) return;
+  const got = v === 'got';
+  if (w.learned !== got) { w.learned = got; w.updatedAt = Date.now(); save(); }
+  if (got) R.got++; else { R.miss++; R.missed.push(w.id); }
+  const stage = $('#rv-stage');
+  const card = $('#rv-card');
+  if (card) card.getAnimations().forEach(a => a.cancel()); // a flip in progress must not turn the next card
+  // the stamp sits over the card; the next card is already underneath
+  if (card && stage) {
+    const r = card.getBoundingClientRect(), s = stage.getBoundingClientRect();
+    const ov = document.createElement('div');
+    ov.className = 'rv-ov ' + (got ? 'got' : 'miss');
+    ov.style.cssText = `left:${r.left - s.left}px;top:${r.top - s.top}px;width:${r.width}px;height:${r.height}px`;
+    ov.innerHTML = `<span>${got ? 'Got it' : 'Not yet'}</span>`;
+    stage.appendChild(ov);
+    const tilt = rvVar('--rv-tilt', 4) * (got ? 1 : -1), sc = rvVar('--rv-scale', 1.1);
+    const tin = rvVar('--rv-in-ms', 100), hold = rvVar('--rv-hold-ms', 300), tout = rvVar('--rv-out-ms', 240);
+    const drop = rvVar('--rv-drop', 90), outSc = rvVar('--rv-out-scale', 0.55);
+    let anim;
+    if (reduced()) {
+      anim = ov.animate([{ opacity: 1 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: 450 });
+    } else {
+      const T = tin + hold + tout;
+      anim = ov.animate([
+        { offset: 0, opacity: 0, transform: 'rotate(0deg) scale(1)', easing: 'ease-out' },
+        { offset: tin / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sc})` },
+        { offset: (tin + hold) / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sc})`, easing: 'cubic-bezier(.55,0,1,.45)' },
+        { offset: 1, opacity: 0, transform: `translate(${got ? 18 : -18}px, ${drop}px) rotate(${tilt}deg) scale(${outSc})` }
+      ], { duration: T });
+    }
+    anim.onfinish = anim.oncancel = () => ov.remove();
+  }
+  R.pos++; R.back = false; R.busy = false;
+  renderCard();
+}
 
 /* ================= Dialog ================= */
 function dialog({ label, title, body, actions }) {
@@ -1071,7 +1684,6 @@ function dialog({ label, title, body, actions }) {
     (primary || scrim.querySelector('.btn')).focus();
   });
 }
-
 /* ================= Home: streak + calendar ================= */
 let calMonth = null; // { y, m } shown in the calendar
 
@@ -1133,459 +1745,6 @@ function renderHome() {
     </div>
   </div>`;
 }
-
-/* ================= List ================= */
-function visible() {
-  const q = query.trim().toLowerCase();
-  return words
-    .filter(w => filter === 'all' || (filter === 'learned' ? w.learned : !w.learned))
-    .filter(w => !q || [w.word, w.meaning, w.pos, w.example, w.note].some(f => f.toLowerCase().includes(q)))
-    .sort((a, b) => b.createdAt - a.createdAt);
-}
-function resultsHTML() {
-  const total = words.length;
-  const list = visible();
-  const nums = numbering();
-  if (!total) {
-    return `<section class="empty-state"><h2>No words yet.</h2>
-      <p>Add the first word you want to keep from the Add tab. It stays on this device.</p></section>`;
-  }
-  if (!list.length) {
-    const what = query.trim()
-      ? `Nothing matches “${esc(query.trim())}”.`
-      : (filter === 'learned' ? 'Nothing learned yet.' : 'Every word is learned.');
-    return `<section class="empty-state"><h2>${what}</h2>
-      <p>${query.trim() ? 'Try another spelling, or clear the search.' : 'Switch the filter above to see the rest.'}</p></section>`;
-  }
-  return `<div class="list-head">
-      <span class="label">${plural(list.length, 'entry', 'entries')}</span>
-      <span class="label">Newest first</span>
-    </div>
-    <ol class="entries">${list.map(w => entryHTML(w, nums.get(w.id))).join('')}</ol>`;
-}
-function renderList() {
-  const total = words.length;
-  const learned = words.filter(w => w.learned).length;
-  const el = $('#s-list');
-  const y = el.scrollTop;
-  el.innerHTML = `${topBar()}
-  <div class="wrap">
-    <h1 class="screen-title">List</h1>
-    <div class="stats" role="group" aria-label="Filter">
-      ${statHTML('all', total, 'All words')}
-      ${statHTML('notyet', total - learned, 'Not yet')}
-      ${statHTML('learned', learned, 'Learned')}
-    </div>
-    ${total ? `<div class="search"><label class="search-row">
-      ${ICON.search}
-      <input id="q" type="search" value="${esc(query)}" placeholder="Search words, meanings, notes" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search">
-      <button class="clear-btn" data-act="clear" aria-label="Clear search" ${query ? '' : 'hidden'}>${ICON.close}</button>
-    </label></div>` : ''}
-    <div id="results">${resultsHTML()}</div>
-    <section class="data">
-      <div class="label">Data</div>
-      <p>Words are saved in this browser only. Export a JSON file to back them up or move them to another device.</p>
-      <div class="data-actions">
-        <button class="text-btn" data-act="export" ${total ? '' : 'disabled'}>Export JSON</button>
-        <button class="text-btn" data-act="import">Import JSON</button>
-      </div>
-    </section>
-    ${sourcesHTML()}
-    <footer class="colophon label">Wordbook &middot; Stored locally${Speech.ok ? '' : ' &middot; Speech not supported here'}</footer>
-  </div>`;
-  el.scrollTop = y;
-}
-// credits for the dictionaries that auto-filled any saved word
-const SOURCES = {
-  wiktionary: { name: 'Wiktionary', url: 'https://www.wiktionary.org/', what: 'meanings, parts of speech and examples', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/' },
-  tatoeba: { name: 'Tatoeba', url: 'https://tatoeba.org/', what: 'example sentences', license: 'CC BY 2.0 FR', licenseUrl: 'https://creativecommons.org/licenses/by/2.0/fr/' },
-  mymemory: { name: 'MyMemory', url: 'https://mymemory.translated.net/', what: 'machine-translated meanings', license: '', licenseUrl: '' }
-};
-const srcGroup = s => (s === 'tatoeba' ? 'tatoeba' : s === 'mymemory' ? 'mymemory' : 'wiktionary');
-function sourcesUsed() {
-  const used = new Set();
-  words.forEach(w => { if (w.src) Object.values(w.src).forEach(s => used.add(srcGroup(s))); });
-  return Object.keys(SOURCES).filter(k => used.has(k));
-}
-function sourcesHTML() {
-  const used = sourcesUsed();
-  if (!used.length) return '';
-  return `<section class="sources">
-    <div class="label">Sources</div>
-    <ul>${used.map(k => { const s = SOURCES[k]; return `<li><a href="${s.url}" target="_blank" rel="noopener">${s.name}</a> — ${s.what}${s.license ? `, <a href="${s.licenseUrl}" target="_blank" rel="noopener">${s.license}</a>` : ''}</li>`; }).join('')}</ul>
-  </section>`;
-}
-function srcLine(w) {
-  if (!w.src) return '';
-  const parts = [];
-  if (w.src.meaning) parts.push('Meaning: ' + SOURCES[srcGroup(w.src.meaning)].name);
-  if (w.src.example) parts.push('Example: ' + SOURCES[srcGroup(w.src.example)].name);
-  return parts.length ? `<p class="src-line">${parts.join(' · ')}</p>` : '';
-}
-function renderResults() {
-  const r = $('#results'); if (!r) return;
-  r.innerHTML = resultsHTML();
-  const c = $('#s-list .clear-btn'); if (c) c.hidden = !query;
-}
-function statHTML(key, n, label) {
-  return `<button class="stat" data-act="filter" data-f="${key}" aria-pressed="${filter === key}">
-    <span class="n num">${n}</span><span class="label">${label}</span></button>`;
-}
-function entryHTML(w, no) {
-  const isOpen = open.has(w.id);
-  return `<li class="entry" data-id="${esc(w.id)}">
-    <div class="entry-head">
-      <button class="entry-main" data-act="toggle" aria-expanded="${isOpen}">
-        <span class="entry-no num">${pad(no)}</span>
-        <span><span class="entry-word">${esc(w.word)}</span>${w.pos ? `<span class="entry-pos">${esc(w.pos)}</span>` : ''}</span>
-        <span class="entry-meaning ${w.meaning ? '' : 'empty'}">${w.meaning ? esc(w.meaning) : 'No meaning yet'}</span>
-      </button>
-      ${speakBtn(w.word, 'Pronounce ' + w.word) || '<span></span>'}
-      <button class="icon-btn" data-act="learn" aria-pressed="${w.learned}" aria-label="${w.learned ? 'Learned. Mark as not yet' : 'Not yet. Mark as learned'}"><span class="mark">${ICON.check}</span></button>
-    </div>
-    ${isOpen ? `<div class="entry-body">
-      <div class="entry-field">
-        <span class="label">Example</span>
-        ${w.example
-          ? `<div class="example-row"><p class="example">${esc(w.example)}</p>${speakBtn(w.example, 'Read the example aloud')}</div>`
-          : `<p class="note">—</p>`}
-      </div>
-      <div class="entry-field">
-        <span class="label">My note</span>
-        <p class="note">${w.note ? esc(w.note) : '—'}</p>
-      </div>
-      ${srcLine(w)}
-      <div class="entry-actions">
-        <button class="text-btn" data-act="edit">Edit</button>
-        <button class="text-btn danger" data-act="delete">Delete</button>
-      </div>
-    </div>` : ''}
-  </li>`;
-}
-
-/* ================= Add ================= */
-const POS = ['noun', 'verb', 'adjective', 'adverb', 'phrase', 'idiom', 'preposition', 'conjunction'];
-let addedId = null;
-let addedStatus = '';
-let addedBusy = false;
-let addedRetry = false;   // offer "Try again" (offline / busy / unreachable)
-let addedLemma = null;    // base form the dictionary answered with (ran -> run)
-let saveTimer = null;
-
-function renderAdd() {
-  const el = $('#s-add');
-  if (!$('#add-form', el)) {
-    el.innerHTML = `${topBar()}
-    <div class="wrap">
-      <h1 class="screen-title">Add</h1>
-      <form class="add-row" id="add-form" novalidate autocomplete="off">
-        <input id="add-word" type="text" placeholder="Type an English word" aria-label="English word"
-          autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done">
-        <button class="btn solid" type="submit">Add</button>
-      </form>
-      <p class="add-err" id="add-err" hidden>Type a word first.</p>
-      <p class="hint">The word is saved right away. Its meaning, part of speech and an example are then looked up in free online dictionaries. Anything can be changed by hand.</p>
-      <section id="added" aria-live="polite"></section>
-    </div>`;
-    $('#add-form').addEventListener('submit', e => { e.preventDefault(); addWord(); });
-    $('#add-word').addEventListener('input', () => { $('#add-err').hidden = true; });
-  }
-  renderAdded();
-}
-
-function statusHTML() {
-  const w = addedId ? byId(addedId) : null;
-  const canRename = w && addedLemma && !words.some(x => x.id !== w.id && x.word.toLowerCase() === addedLemma.toLowerCase());
-  return `<p class="status ${addedBusy ? 'busy' : ''}" id="lookup-status">${esc(addedStatus)}</p>
-    ${addedLemma && w ? `<p class="status" id="lemma-note">These details are for “${esc(addedLemma)}”, the base form of “${esc(w.word)}”.</p>` : ''}
-    ${(addedRetry && !addedBusy) || canRename ? `<div class="status-actions">
-      ${addedRetry && !addedBusy ? '<button class="text-btn" data-act="retry">Try again</button>' : ''}
-      ${canRename ? `<button class="text-btn" data-act="use-lemma">Save as “${esc(addedLemma)}”</button>` : ''}
-    </div>` : ''}`;
-}
-function renderStatus() {
-  const s = $('#status-box');
-  if (s) s.innerHTML = statusHTML();
-}
-
-function renderAdded() {
-  const box = $('#added');
-  if (!box) return;
-  const w = addedId ? byId(addedId) : null;
-  if (!w) { box.className = ''; box.innerHTML = ''; return; }
-  box.className = 'added';
-  box.innerHTML = `
-    <div class="added-head"><span class="label">Just added</span><span class="label" id="autosave">Saved automatically</span></div>
-    <div id="status-box">${statusHTML()}</div>
-    <label class="fld"><span class="label">English word</span>
-      <input type="text" class="big" data-field="word" value="${esc(w.word)}" autocapitalize="none" spellcheck="false"></label>
-    <label class="fld"><span class="label">Meaning</span>
-      <textarea rows="1" data-field="meaning">${esc(w.meaning)}</textarea></label>
-    <div class="fld"><span class="label">Part of speech</span>
-      <input type="text" data-field="pos" value="${esc(w.pos)}" autocapitalize="none" placeholder="Type or choose below" aria-label="Part of speech">
-      <div class="chips">${POS.map(p => `<button type="button" class="chip" data-act="add-pos" data-pos="${p}" aria-pressed="${w.pos === p}">${p}</button>`).join('')}</div>
-    </div>
-    <label class="fld"><span class="label">Example sentence</span>
-      <textarea rows="1" data-field="example" spellcheck="false">${esc(w.example)}</textarea></label>
-    <label class="fld"><span class="label">My note</span>
-      <textarea rows="2" data-field="note">${esc(w.note)}</textarea></label>`;
-  box.querySelectorAll('textarea').forEach(autosize);
-  box.oninput = e => {
-    const f = e.target.dataset.field;
-    if (!f) return;
-    if (e.target.tagName === 'TEXTAREA') autosize(e.target);
-    if (f === 'pos') syncChips(box, e.target.value);
-    queueSave(f, e.target.value);
-  };
-  box.onfocusout = e => {
-    if (e.target.dataset.field === 'word' && !e.target.value.trim()) e.target.value = byId(addedId)?.word || '';
-  };
-}
-
-// a field typed by hand is no longer "from the dictionary"
-function dropSrc(w, field) {
-  if (w.src && w.src[field]) { delete w.src[field]; if (!Object.keys(w.src).length) delete w.src; }
-}
-function queueSave(field, value) {
-  const w = byId(addedId);
-  if (!w) return;
-  const v = value.trim();
-  if (field === 'word' && !v) return; // never store an empty word
-  if (w[field] !== v) dropSrc(w, field);
-  w[field] = v;
-  w.updatedAt = Date.now();
-  const tag = $('#autosave'); if (tag) tag.textContent = 'Saving…';
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { save(); const t = $('#autosave'); if (t) t.textContent = 'Saved automatically'; }, 250);
-}
-
-function addWord() {
-  const input = $('#add-word');
-  const text = input.value.trim().replace(/\s+/g, ' ');
-  if (!text) { $('#add-err').hidden = false; input.focus(); return; }
-  clearTimeout(saveTimer); save(); // flush edits to the previous word
-  const dup = words.find(w => w.word.toLowerCase() === text.toLowerCase());
-  input.value = '';
-  if (dup) {
-    addedId = dup.id; addedBusy = false; addedRetry = false; addedLemma = null;
-    addedStatus = 'Already in your list. Showing the saved entry.';
-    renderAdded();
-    return;
-  }
-  const now = Date.now();
-  const w = normalize({ id: uid(), word: text, createdAt: now, updatedAt: now });
-  words.push(w);
-  save();
-  addedId = w.id; addedBusy = true; addedRetry = false; addedLemma = null;
-  addedStatus = 'Saved. Looking it up…';
-  renderAdded();
-  queueLookup(w.id);
-}
-
-// Lookups run one at a time, in the order the words were added
-// (Tatoeba drops requests when many arrive at once).
-let lookupChain = Promise.resolve();
-function queueLookup(id) {
-  const p = lookupChain.then(() => autofill(id));
-  lookupChain = p.catch(() => {});
-  return p;
-}
-
-const LOOKUP_ERROR = {
-  offline: w => ({ text: `You’re offline, so “${w}” was saved without details. Try again when you’re back online, or fill them in yourself.`, retry: true }),
-  not_found: w => ({ text: `“${w}” isn’t in the dictionary. The word is saved; fill in the details yourself (and check the spelling).`, retry: false }),
-  rate_limit: w => ({ text: `The dictionary is busy (too many requests). “${w}” is saved; try again later or fill in the details yourself.`, retry: true }),
-  unavailable: w => ({ text: `The dictionary couldn’t be reached. “${w}” is saved; try again or fill in the details yourself.`, retry: true }),
-  invalid_input: w => ({ text: `“${w}” doesn’t look like an English word or phrase, so it wasn’t looked up. It is saved; fill in the details yourself.`, retry: false })
-};
-
-// the single call site of window.Wordbook.lookupWord(): fills only the fields that are still empty
-async function autofill(id) {
-  const w = byId(id);
-  if (!w) return;
-  if (addedId === id && !addedBusy) { addedBusy = true; addedRetry = false; addedStatus = 'Looking it up…'; renderStatus(); }
-  let res = null, kind = null;
-  try { res = await window.Wordbook.lookupWord(w.word); }
-  catch (e) { kind = (e && LOOKUP_ERROR[e.kind]) ? e.kind : 'unavailable'; }
-  const cur = byId(id);
-  if (!cur) return;
-  let filled = 0, found = 0;
-  if (!kind && res && typeof res === 'object') {
-    const src = (res.source && typeof res.source === 'object') ? res.source : {};
-    for (const f of ['meaning', 'pos', 'example']) {
-      const v = str(res[f]);
-      if (!v) continue;
-      found++;
-      if (!cur[f]) {
-        cur[f] = v; filled++;
-        if (src[f]) { cur.src = normSrc({ ...(cur.src || {}), [f]: src[f] }) || undefined; if (!cur.src) delete cur.src; }
-      }
-    }
-  }
-  if (filled) { cur.updatedAt = Date.now(); save(); }
-  if (addedId !== id) return;
-
-  addedBusy = false; addedRetry = false;
-  addedLemma = (!kind && res && typeof res.lemma === 'string' && res.lemma && res.lemma.toLowerCase() !== cur.word.toLowerCase()) ? res.lemma : null;
-  if (kind) {
-    const m = LOOKUP_ERROR[kind](cur.word);
-    addedStatus = m.text; addedRetry = m.retry;
-  } else if (!found) addedStatus = 'The dictionary had nothing for this word. Fill in the details yourself.';
-  else if (!filled) addedStatus = 'Your own entries were kept; nothing was overwritten.';
-  else if (found < 3) addedStatus = 'Filled in what the dictionary had. Add the rest yourself.';
-  else addedStatus = 'Filled in from the dictionary. Edit anything below.';
-
-  // update only the fields the user has not touched; keep focus where it is
-  const box = $('#added');
-  if (!box || !box.firstElementChild) return renderAdded();
-  renderStatus();
-  for (const f of ['meaning', 'pos', 'example']) {
-    const el = box.querySelector(`[data-field="${f}"]`);
-    if (el && !el.value.trim() && cur[f]) { el.value = cur[f]; if (el.tagName === 'TEXTAREA') autosize(el); }
-  }
-  syncChips(box, cur.pos);
-}
-
-function autosize(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
-function syncChips(root, value) {
-  const v = String(value || '').trim().toLowerCase();
-  root.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.pos === v)));
-}
-
-/* ================= Edit overlay (from List) ================= */
-let editingId = null;
-function openForm(id) {
-  const w = byId(id);
-  if (!w) return;
-  editingId = id;
-  pushView('form');
-  $('#layer').innerHTML = `<div class="view" id="form-view">
-    <div class="view-top"><div class="wrap">
-      <button class="top-btn" data-act="cancel">Cancel</button>
-      <span class="label">Edit word</span>
-      <button class="top-btn right" data-act="save">Save</button>
-    </div></div>
-    <form class="wrap form" id="form" novalidate autocomplete="off">
-      <label class="fld" id="fld-word"><span class="label">English word</span>
-        <input type="text" name="word" class="big" value="${esc(w.word)}" autocapitalize="off" spellcheck="false">
-        <div class="err" hidden>Enter a word.</div></label>
-      <label class="fld"><span class="label">Meaning</span><textarea name="meaning" rows="1">${esc(w.meaning)}</textarea></label>
-      <div class="fld"><label class="label" for="pos">Part of speech</label>
-        <input type="text" id="pos" name="pos" value="${esc(w.pos)}" autocapitalize="off" placeholder="Type or choose below">
-        <div class="chips">${POS.map(p => `<button type="button" class="chip" data-act="pos" data-pos="${p}" aria-pressed="${w.pos === p}">${p}</button>`).join('')}</div></div>
-      <label class="fld"><span class="label">Example sentence</span><textarea name="example" rows="1" spellcheck="false">${esc(w.example)}</textarea></label>
-      <label class="fld"><span class="label">My note</span><textarea name="note" rows="2">${esc(w.note)}</textarea></label>
-      <button type="button" class="toggle-row" data-act="form-learned" aria-pressed="${w.learned}"><span>Learned</span><span class="mark">${ICON.check}</span></button>
-      <div class="form-delete"><button type="button" class="text-btn danger" data-act="delete">Delete this word</button></div>
-    </form>
-  </div>`;
-  const view = $('#form-view');
-  view.querySelectorAll('textarea').forEach(autosize);
-  view.addEventListener('input', e => {
-    if (e.target.tagName === 'TEXTAREA') autosize(e.target);
-    if (e.target.name === 'pos') syncChips(view, e.target.value);
-    if (e.target.name === 'word') { $('#fld-word').classList.remove('invalid'); $('#fld-word .err').hidden = true; }
-  });
-  $('#form').addEventListener('submit', e => { e.preventDefault(); saveForm(); });
-}
-function saveForm() {
-  const f = $('#form');
-  const data = {
-    word: f.word.value.trim(), meaning: f.meaning.value.trim(), pos: f.pos.value.trim(),
-    example: f.example.value.trim(), note: f.note.value.trim(),
-    learned: $('[data-act="form-learned"]').getAttribute('aria-pressed') === 'true'
-  };
-  if (!data.word) {
-    $('#fld-word').classList.add('invalid'); $('#fld-word .err').hidden = false; f.word.focus(); return;
-  }
-  const target = byId(editingId);
-  ['meaning', 'pos', 'example'].forEach(k => { if (target[k] !== data[k]) dropSrc(target, k); });
-  Object.assign(target, data, { updatedAt: Date.now() });
-  if (!save()) return;
-  closeView();
-  toast('Saved.');
-}
-
-/* ================= Review ================= */
-let deck = [], pos = 0, revealed = false, scope = 'notyet';
-function shuffle(a) {
-  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
-}
-function buildDeck() {
-  const src = scope === 'notyet' ? words.filter(w => !w.learned) : words.slice();
-  deck = shuffle(src.map(w => w.id));
-  pos = 0; revealed = false;
-}
-function enterReview() {
-  // keep a session in progress; start a new one when there is none
-  deck = deck.filter(id => byId(id));
-  if (!deck.length || pos >= deck.length) {
-    scope = words.some(w => !w.learned) ? 'notyet' : 'all';
-    buildDeck();
-  }
-}
-function meaningHTML(m) {
-  if (!m) return '<p class="card-meaning">—</p>';
-  const parts = m.split(' / ').map(x => x.trim()).filter(Boolean);
-  if (parts.length < 2) return '<p class="card-meaning">' + esc(m) + '</p>';
-  return '<ol class="card-senses">' + parts.map(p => '<li>' + esc(p) + '</li>').join('') + '</ol>';
-}
-function renderReview() {
-  while (pos < deck.length && !byId(deck[pos])) pos++;
-  const notyet = words.filter(w => !w.learned).length;
-  const total = deck.length;
-  const finished = pos >= total;
-  const w = finished ? null : byId(deck[pos]);
-  const pct = total ? Math.min(pos + (finished ? 0 : (revealed ? 1 : 0.5)), total) / total * 100 : 0;
-
-  let main, bar;
-  if (!total) {
-    main = `<div class="card wrap done"><div class="label">Review</div><h2>Nothing to review.</h2>
-      <p>${words.length ? 'Every word is marked as learned. Switch to All to go through them again.' : 'Add a few words from the Add tab first.'}</p></div>`;
-    bar = '';
-  } else if (finished) {
-    main = `<div class="card wrap done"><div class="label">Session complete</div>
-      <h2>That’s all ${plural(total, 'word', 'words')}.</h2>
-      <p>Shuffle again for another round.</p></div>`;
-    bar = `<button class="btn solid" data-act="again">Shuffle again</button>`;
-  } else {
-    main = `<div class="card wrap">
-      <div class="card-no"><span class="label num">${pad(pos + 1)} / ${pad(total)}</span>
-        <span class="label">${w.learned ? 'Learned' : 'Not yet'}</span></div>
-      <h2 class="card-word">${esc(w.word)}</h2>
-      <div class="card-pos">${esc(w.pos)}</div>
-      ${Speech.ok ? `<div class="card-say">${speakBtn(w.word, 'Pronounce ' + w.word)}</div>` : ''}
-      <div class="card-reveal">
-        ${revealed ? `
-          <div class="label" style="margin-bottom:6px">Meaning</div>
-          ${meaningHTML(w.meaning)}
-          ${w.example ? `<div class="card-example"><div class="label">Example</div>
-            <div class="example-row"><p class="example">${esc(w.example)}</p>${speakBtn(w.example, 'Read the example aloud')}</div></div>` : ''}
-          ${w.note ? `<div class="card-example"><div class="label">My note</div><p class="note">${esc(w.note)}</p></div>` : ''}
-        ` : `<p class="card-hint">Say the meaning to yourself, then check.</p>`}
-      </div>
-    </div>`;
-    bar = revealed
-      ? `<div class="grade" role="group" aria-label="Mark this word">
-          <button class="btn" data-act="grade" data-v="notyet"><span class="mark"></span>Not yet</button>
-          <button class="btn solid" data-act="grade" data-v="learned"><span class="mark on">${ICON.check}</span>Learned</button>
-        </div>`
-      : `<button class="btn solid" data-act="reveal">Show meaning</button>`;
-  }
-  $('#s-review').innerHTML = `${topBar()}
-    <div class="wrap">
-      <h1 class="screen-title">Review</h1>
-      <div class="scope" role="group" aria-label="Words to review">
-        <button class="text-btn" data-act="scope" data-s="notyet" aria-pressed="${scope === 'notyet'}">Not yet &middot; ${notyet}</button>
-        <button class="text-btn" data-act="scope" data-s="all" aria-pressed="${scope === 'all'}">All &middot; ${words.length}</button>
-      </div>
-      <div class="progress"><i style="width:${pct}%"></i></div>
-    </div>
-    ${main}
-    ${bar ? `<div class="review-actions"><div class="wrap">${bar}</div></div>` : ''}`;
-}
-
 /* ================= Tab bar: glass capsule with a lifting lens ================= */
 const TABS = ['review', 'add', 'list'];
 const pill = $('#pill');
@@ -1708,7 +1867,6 @@ function moveLens(from, to) {
   anim.onfinish = () => pill.classList.remove('lens');
   return anim;
 }
-
 /* ================= Screens ================= */
 let current = 'home';
 const screenEl = n => $('#s-' + n);
@@ -1750,44 +1908,22 @@ function rerenderCurrent() {
   renderScreen(current);
 }
 
-/* ================= Overlay history ================= */
-let overlay = null;
-function pushView(v) {
-  overlay = v;
-  clearToast();
-  try { history.pushState({ view: v }, ''); } catch (e) {}
-}
-function closeView() {
-  if (history.state && history.state.view) history.back();
-  else teardown();
-}
-function teardown() {
-  overlay = null;
-  editingId = null;
-  $('#layer').innerHTML = '';
-  rerenderCurrent();
-}
-window.addEventListener('popstate', () => { if (overlay) teardown(); });
-
 /* ================= Actions ================= */
 async function confirmDelete(id) {
   const w = byId(id);
   if (!w) return;
   const ok = await dialog({
-    label: 'Delete',
-    title: `Delete “${w.word}”?`,
+    label: 'Delete', title: `Delete “${w.word}”?`,
     body: 'This removes the word and its notes from this device. It cannot be undone.',
     actions: [{ text: 'Delete', style: 'danger', value: true }, { text: 'Cancel', value: false }]
   });
   if (!ok) return;
   words = words.filter(x => x.id !== id);
   open.delete(id);
-  if (addedId === id) addedId = null;
   save();
-  if (overlay === 'form') closeView(); else rerenderCurrent();
+  rerenderCurrent();
   toast(`Deleted “${w.word}”.`);
 }
-
 function exportJSON() {
   const payload = { app: 'wordbook', version: 1, exportedAt: new Date().toISOString(), count: words.length, words, days: [...days].sort() };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -1798,48 +1934,33 @@ function exportJSON() {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
   toast(`Exported ${plural(words.length, 'word', 'words')}.`);
 }
-
 async function importFile(file) {
   let data;
   try { data = JSON.parse(await file.text()); }
   catch (e) { return dialog({ label: 'Import', title: 'This file could not be read.', body: 'Choose a JSON file exported from Wordbook.', actions: [{ text: 'OK', style: 'solid', value: null }] }); }
   const list = Array.isArray(data) ? data : (data && Array.isArray(data.words) ? data.words : null);
-  const incoming = (list || []).map(normalize).filter(Boolean);
-  if (!incoming.length) {
-    return dialog({ label: 'Import', title: 'No words found in this file.', body: 'Choose a JSON file exported from Wordbook.', actions: [{ text: 'OK', style: 'solid', value: null }] });
-  }
+  const incoming = (list || []).map(x => { try { return normalize(x); } catch (e) { return null; } }).filter(Boolean);
+  incoming.forEach(w => { if (w.state === 'pending') w.state = 'failed'; });
+  if (!incoming.length) return dialog({ label: 'Import', title: 'No words found in this file.', body: 'Choose a JSON file exported from Wordbook.', actions: [{ text: 'OK', style: 'solid', value: null }] });
   let mode = 'replace';
   if (words.length) {
     mode = await dialog({
-      label: 'Import',
-      title: `Import ${plural(incoming.length, 'word', 'words')}?`,
+      label: 'Import', title: `Import ${plural(incoming.length, 'word', 'words')}?`,
       body: `Merge keeps the ${plural(words.length, 'word', 'words')} on this device and adds or updates from the file. Replace discards them and uses the file only.`,
-      actions: [
-        { text: 'Merge', style: 'solid', value: 'merge' },
-        { text: 'Replace', value: 'replace' },
-        { text: 'Cancel', value: null }
-      ]
+      actions: [{ text: 'Merge', style: 'solid', value: 'merge' }, { text: 'Replace', value: 'replace' }, { text: 'Cancel', value: null }]
     });
     if (!mode) return;
   }
-  if (mode === 'merge') {
-    const map = new Map(words.map(w => [w.id, w]));
-    incoming.forEach(w => map.set(w.id, w));
-    words = [...map.values()];
-  } else {
-    words = incoming;
-  }
-  // review days travel with the file (older exports have none); they are only ever added
-  if (data && Array.isArray(data.days)) {
-    data.days.forEach(d => { if (typeof d === 'string' && DAY_RE.test(d)) days.add(d); });
-    saveDays();
-  }
+  if (mode === 'merge') { const map = new Map(words.map(w => [w.id, w])); incoming.forEach(w => map.set(w.id, w)); words = [...map.values()]; }
+  else words = incoming;
+  if (data && Array.isArray(data.days)) { data.days.forEach(d => { if (typeof d === 'string' && DAY_RE.test(d)) days.add(d); }); saveDays(); }
   open.clear();
   save();
   rerenderCurrent();
   toast(`Imported ${plural(incoming.length, 'word', 'words')}.`);
 }
 
+let noteTimer = null;
 document.addEventListener('click', e => {
   const tab = e.target.closest('.tab');
   if (tab) { go(tab.dataset.tab); return; }
@@ -1847,7 +1968,7 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   const li = b.closest('.entry');
-  const id = li ? li.dataset.id : editingId;
+  const id = li ? li.dataset.id : null;
   switch (act) {
     case 'home': go('home'); break;
     case 'speak': Speech.speak(b.dataset.text, b); break;
@@ -1857,60 +1978,55 @@ document.addEventListener('click', e => {
     case 'clear': { query = ''; renderList(); const q = $('#q'); if (q) q.focus(); break; }
     case 'toggle': open.has(id) ? open.delete(id) : open.add(id); renderResults(); break;
     case 'learn': { const w = byId(id); w.learned = !w.learned; w.updatedAt = Date.now(); save(); renderList(); break; }
-    case 'edit': openForm(id); break;
     case 'delete': confirmDelete(id); break;
-    case 'cancel': closeView(); break;
-    case 'save': saveForm(); break;
-    case 'pos': { const input = $('#pos'); input.value = b.getAttribute('aria-pressed') === 'true' ? '' : b.dataset.pos; syncChips($('#form-view'), input.value); break; }
-    case 'add-pos': {
-      const box = $('#added'); const input = box.querySelector('[data-field="pos"]');
-      input.value = b.getAttribute('aria-pressed') === 'true' ? '' : b.dataset.pos;
-      syncChips(box, input.value); queueSave('pos', input.value); break;
-    }
-    case 'retry': if (addedId) { addedRetry = false; queueLookup(addedId); } break;
-    case 'use-lemma': {
-      const w = byId(addedId);
-      if (w && addedLemma && !words.some(x => x.id !== w.id && x.word.toLowerCase() === addedLemma.toLowerCase())) {
-        w.word = addedLemma; w.updatedAt = Date.now(); save();
-        addedStatus = `Saved as “${addedLemma}”.`; addedLemma = null; renderAdded();
-      }
+    case 'more': {
+      moreOpen.add(b.dataset.k);
+      if (current === 'review') renderCard(); else if (current === 'add') renderRecent(); else renderResults();
       break;
     }
-    case 'form-learned': b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); break;
-    case 'reveal': revealed = true; markToday(); renderReview(); break;
-    case 'grade': {
-      const w = byId(deck[pos]);
-      if (w) { const v = b.dataset.v === 'learned'; if (w.learned !== v) { w.learned = v; w.updatedAt = Date.now(); save(); } }
-      pos++; revealed = false; renderReview(); break;
-    }
-    case 'again': buildDeck(); renderReview(); break;
-    case 'scope': scope = b.dataset.s; buildDeck(); renderReview(); break;
+    case 'retry': queueLookup(b.dataset.id); break;
+    case 'add-anyway': manualOpen = true; renderAddMsg(); break;
+    case 'voice-test': Speech.speak('This is the voice for your wordbook.', b); break;
+    case 'flip': flipCard(); break;
+    case 'judge': judge(b.dataset.v); break;
+    case 'rv-again': { startDeck(R.missed); renderCard(); break; }
+    case 'rv-done': R.deck = []; go('home'); break;
     case 'export': exportJSON(); break;
     case 'import': $('#file').value = ''; $('#file').click(); break;
   }
 });
-document.addEventListener('input', e => { if (e.target.id === 'q') { query = e.target.value; renderResults(); } });
+document.addEventListener('input', e => {
+  if (e.target.id === 'q') { query = e.target.value; renderResults(); return; }
+  if (e.target.dataset && e.target.dataset.note) {
+    const w = byId(e.target.dataset.note);
+    if (!w) return;
+    w.note = e.target.value.trim(); w.updatedAt = Date.now();
+    clearTimeout(noteTimer); noteTimer = setTimeout(save, 300);
+  }
+});
+document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.note) { clearTimeout(noteTimer); save(); } });
+document.addEventListener('change', e => {
+  if (e.target.id === 'voice-sel') Speech.choose(e.target.value);
+});
 $('#file').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) importFile(f); });
 document.addEventListener('keydown', e => {
-  if (current !== 'review' || overlay || $('.scrim') || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
-  if (e.key === ' ' || e.key === 'Enter') { const b = $('[data-act="reveal"]'); if (b) { e.preventDefault(); b.click(); } }
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-    const b = $(`[data-act="grade"][data-v="${e.key === 'ArrowRight' ? 'learned' : 'notyet'}"]`);
-    if (b) { e.preventDefault(); b.click(); }
-  }
+  if (current !== 'review' || $('.scrim') || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  if (e.key === ' ' || e.key === 'Enter') { if ($('#rv-card')) { e.preventDefault(); flipCard(); } }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); judge('miss'); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); judge('got'); }
 });
 window.addEventListener('storage', e => {
   if (e.key === KEY) words = load();
   if (e.key === DAYS_KEY) days = loadDays();
   if (e.key === KEY || e.key === DAYS_KEY) rerenderCurrent();
 });
-// the app can stay open across midnight: refresh the streak when it comes back
-document.addEventListener('visibilitychange', () => { if (!document.hidden && current === 'home' && !overlay) renderHome(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && current === 'home') renderHome(); });
 window.addEventListener('resize', layoutPill);
 
 try { history.replaceState({}, ''); } catch (e) {}
 words = load();
 days = loadDays();
+Speech.init();
 applyGlass();
 renderHome();
 layoutPill();

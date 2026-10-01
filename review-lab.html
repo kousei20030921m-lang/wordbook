@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Review Card Lab</title>
+<meta name="theme-color" content="#f4f1ea">
+<style>
+/* Same variable names as index.html. "Copy values" gives lines to paste into its :root. */
+:root {
+  --paper: #f4f1ea; --ink: #1d1b18; --ink-2: #57524a; --ink-3: #8c8578; --rule: #d6d0c3;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+  --rv-flip-ms: 200;
+  --rv-tilt: 4;
+  --rv-scale: 1.1;
+  --rv-in-ms: 100;
+  --rv-hold-ms: 300;
+  --rv-out-ms: 240;
+  --rv-drop: 90;
+  --rv-out-scale: 0.55;
+  --rv-radius: 34px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 14px; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; display: flex; flex-direction: column; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+.panel { flex: none; padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px 8px; border-bottom: 1px solid var(--rule); max-height: 46vh; overflow-y: auto; }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.panel h1 { font-size: 17px; margin: 0; }
+.panel p { margin: 4px 0 6px; color: var(--ink-3); font-size: 12px; }
+.row { display: grid; grid-template-columns: 7.2em 1fr 4.2em; align-items: center; gap: 10px; min-height: 32px; }
+.row label { font-size: 12px; font-weight: 600; }
+.row output { font-variant-numeric: tabular-nums; text-align: right; font-size: 12px; color: var(--ink-2); }
+.row input[type=range] { width: 100%; accent-color: var(--ink); height: 28px; }
+.line { display: flex; align-items: center; gap: 10px; min-height: 36px; }
+.line .k { width: 5.2em; flex: none; font-size: 12px; font-weight: 600; }
+.seg { display: flex; gap: 6px; }
+.seg button { flex: none; min-height: 32px; padding: 0 10px; border: 1px solid var(--rule); border-radius: 16px; font-size: 12px; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.btn { min-height: 40px; padding: 0 14px; border: 1px solid var(--ink); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.btn.solid { background: var(--ink); color: var(--paper); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.copied { font-size: 12px; color: var(--ink-2); align-self: center; }
+
+/* ---- card (identical to index.html) ---- */
+.rv { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 16px 24px calc(env(safe-area-inset-bottom, 0px) + 16px); }
+.rv-stage { position: relative; flex: 1; min-height: 0; }
+#rv-card-slot { position: absolute; inset: 0; }
+.rv-card { position: absolute; inset: 0; border-radius: var(--rv-radius); cursor: pointer; user-select: none; -webkit-user-select: none; will-change: transform; }
+.rv-face { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 20px 26px 22px; border-radius: inherit; overflow: hidden; }
+.rv-front { background: #2b2a28; color: #fff; }
+.rv-back { background: #fff; color: var(--ink); border: 1.5px solid #dcd7cc; }
+.rv-top { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; letter-spacing: .04em; }
+.rv-front .rv-top { color: rgba(255, 255, 255, .5); } .rv-back .rv-top { color: var(--ink-3); }
+.rv-counts { display: flex; gap: 12px; }
+.c-miss { color: #b3412e; } .c-got { color: #2e7d4f; } .rv-front .c-miss { color: #e28f7d; } .rv-front .c-got { color: #8fcaa3; }
+.rv-word-wrap { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.rv-word { font-size: clamp(34px, 11vw, 54px); font-weight: 600; letter-spacing: -.025em; margin: 0; }
+.rv-hint { text-align: center; font-size: 13px; color: rgba(255, 255, 255, .45); margin: 0; }
+.rv-back-word { font-size: 24px; font-weight: 700; margin: 12px 0 8px; }
+.rv-back ol { margin: 0; padding-left: 1.7em; line-height: 1.6; font-size: 15px; }
+.rv-judge { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding-top: 14px; }
+.judge { height: 58px; border-radius: 29px; border: 1.5px solid var(--rule); background: #fff; display: grid; place-items: center; }
+.judge.miss { color: #b3412e; } .judge.got { color: #2e7d4f; }
+.rv-ov { position: absolute; z-index: 3; border-radius: var(--rv-radius); display: grid; place-items: center; pointer-events: none; opacity: 0; }
+.rv-ov span { font-size: 40px; font-weight: 700; letter-spacing: -.02em; }
+.rv-ov.got { background: #d6ecdd; border: 2px solid #9ccfad; color: #2e7d4f; }
+.rv-ov.miss { background: #f7ddd6; border: 2px solid #e8a999; color: #b3412e; }
+</style>
+</head>
+<body>
+<section class="panel" aria-label="Controls">
+  <div class="head"><h1>Review Card Lab</h1><button class="btn solid" id="copy">Copy values</button></div>
+  <p>Tap the card to flip, tap &#x2717; or &#x2713; to judge. Tune, then Copy values and send them back.</p>
+  <div id="sliders"></div>
+  <div class="line"><span class="k">Playback</span><div class="seg" id="speed"></div></div>
+  <div class="btns">
+    <button class="btn" id="auto">Auto-play</button>
+    <button class="btn" id="reset">Reset</button>
+    <span class="copied" id="copied" role="status"></span>
+  </div>
+</section>
+<div class="rv">
+  <div class="rv-stage" id="rv-stage"><div id="rv-card-slot"></div></div>
+  <div class="rv-judge">
+    <button class="judge miss" data-v="miss" aria-label="Not yet"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+    <button class="judge got" data-v="got" aria-label="Got it"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg></button>
+  </div>
+</div>
+<script>
+(function () {
+'use strict';
+const $ = s => document.querySelector(s);
+const root = document.documentElement;
+const KNOBS = [
+  ['--rv-flip-ms', 'Flip time', 60, 600, 10, 'ms'],
+  ['--rv-tilt', 'Stamp tilt', 0, 15, 0.5, '°'],
+  ['--rv-scale', 'Stamp size', 1, 1.3, 0.01, 'x'],
+  ['--rv-in-ms', 'Stamp fade-in', 20, 400, 10, 'ms'],
+  ['--rv-hold-ms', 'Stamp hold', 0, 1000, 10, 'ms'],
+  ['--rv-out-ms', 'Stamp exit', 60, 700, 10, 'ms'],
+  ['--rv-drop', 'Exit drop', 0, 300, 5, 'px'],
+  ['--rv-out-scale', 'Exit size', 0.2, 1, 0.01, 'x']
+];
+const DEF = {};
+KNOBS.forEach(([k]) => { DEF[k] = parseFloat(getComputedStyle(root).getPropertyValue(k)); });
+$('#sliders').innerHTML = KNOBS.map(([k, l, mn, mx, st, u]) => `<div class="row"><label for="${k}">${l}</label><input type="range" id="${k}" min="${mn}" max="${mx}" step="${st}" value="${DEF[k]}"><output id="${k}-o">${DEF[k]}${u}</output></div>`).join('');
+KNOBS.forEach(([k, , , , , u]) => { const el = document.getElementById(k); el.addEventListener('input', () => { root.style.setProperty(k, el.value); document.getElementById(k + '-o').textContent = el.value + u; }); });
+let speed = 1;
+$('#speed').innerHTML = [1, 0.5, 0.25, 0.1].map(s => `<button data-s="${s}" aria-pressed="${s === 1}">${s === 1 ? 'Real' : s + 'x'}</button>`).join('');
+$('#speed').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; speed = +b.dataset.s; $('#speed').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+const v = (k, d) => { const x = parseFloat(getComputedStyle(root).getPropertyValue(k)); return isFinite(x) ? x : d; };
+const ms = (k, d) => v(k, d) / speed;
+
+// ---- same card logic as index.html (durations divided by the playback speed)
+const WORDS = [['threshold', ['敷居', '入口', '発端', '閾値']], ['mitigate', ['（苦痛などを）和らげる、鎮める', '（刑罰などを）軽減する']], ['ephemeral', ['束の間の、儚い、短命の', '〈生物学〉一日限りの命の']], ['negotiate', ['交渉する', '〜について交渉する', '〈山道などを〉乗り越える']]];
+const R = { i: 0, back: false, got: 0, miss: 0, busy: false };
+function render() {
+  const w = WORDS[R.i % WORDS.length];
+  const top = `<div class="rv-top"><span>${R.i % WORDS.length + 1} / ${WORDS.length}</span><span class="rv-counts"><span class="c-miss">✗ ${R.miss}</span><span class="c-got">✓ ${R.got}</span></span></div>`;
+  $('#rv-card-slot').innerHTML = `<div class="rv-card" id="rv-card">${R.back
+    ? `<div class="rv-face rv-back">${top}<p class="rv-back-word">${w[0]}</p><ol>${w[1].map(s => `<li>${s}</li>`).join('')}</ol></div>`
+    : `<div class="rv-face rv-front">${top}<div class="rv-word-wrap"><p class="rv-word">${w[0]}</p></div><p class="rv-hint">See answer</p></div>`}</div>`;
+}
+function flip() {
+  const card = $('#rv-card'); if (!card || R.busy) return;
+  const T = ms('--rv-flip-ms', 200); R.busy = true;
+  const a = card.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: T * 0.4, easing: 'cubic-bezier(.5,0,1,1)', fill: 'forwards' });
+  a.onfinish = () => { R.back = !R.back; render(); const b = $('#rv-card').animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: T * 0.6, easing: 'cubic-bezier(0,0,.2,1)' }); b.onfinish = b.oncancel = () => { R.busy = false; }; };
+}
+function judge(val) {
+  const got = val === 'got';
+  const card = $('#rv-card'), stage = $('#rv-stage');
+  if (card) card.getAnimations().forEach(a => a.cancel());
+  if (got) R.got++; else R.miss++;
+  const r = card.getBoundingClientRect(), s = stage.getBoundingClientRect();
+  const ov = document.createElement('div');
+  ov.className = 'rv-ov ' + (got ? 'got' : 'miss');
+  ov.style.cssText = `left:${r.left - s.left}px;top:${r.top - s.top}px;width:${r.width}px;height:${r.height}px`;
+  ov.innerHTML = `<span>${got ? 'Got it' : 'Not yet'}</span>`;
+  stage.appendChild(ov);
+  const tilt = v('--rv-tilt', 4) * (got ? 1 : -1), sc = v('--rv-scale', 1.1);
+  const tin = ms('--rv-in-ms', 100), hold = ms('--rv-hold-ms', 300), tout = ms('--rv-out-ms', 240);
+  const drop = v('--rv-drop', 90), outSc = v('--rv-out-scale', 0.55), T = tin + hold + tout;
+  const an = ov.animate([
+    { offset: 0, opacity: 0, transform: 'rotate(0deg) scale(1)', easing: 'ease-out' },
+    { offset: tin / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sc})` },
+    { offset: (tin + hold) / T, opacity: 1, transform: `rotate(${tilt}deg) scale(${sc})`, easing: 'cubic-bezier(.55,0,1,.45)' },
+    { offset: 1, opacity: 0, transform: `translate(${got ? 18 : -18}px, ${drop}px) rotate(${tilt}deg) scale(${outSc})` }
+  ], { duration: T });
+  an.onfinish = an.oncancel = () => ov.remove();
+  R.i++; R.back = false; R.busy = false; render();
+}
+$('#rv-stage').addEventListener('click', e => { if (e.target.closest('#rv-card')) flip(); });
+document.querySelectorAll('.judge').forEach(b => b.addEventListener('click', () => judge(b.dataset.v)));
+let autoT = null, step = 0;
+$('#auto').addEventListener('click', e => {
+  const on = !autoT; e.currentTarget.classList.toggle('solid', on);
+  if (!on) { clearInterval(autoT); autoT = null; return; }
+  autoT = setInterval(() => { const s = step++ % 3; if (s === 0) flip(); else if (s === 1) {} else judge(step % 2 ? 'got' : 'miss'); }, 900 / Math.max(speed, 0.25));
+});
+$('#reset').addEventListener('click', () => { KNOBS.forEach(([k, , , , , u]) => { document.getElementById(k).value = DEF[k]; root.style.setProperty(k, DEF[k]); document.getElementById(k + '-o').textContent = DEF[k] + u; }); });
+function valuesText() { return KNOBS.map(([k]) => `  ${k}: ${document.getElementById(k).value};`).join('\n'); }
+$('#copy').addEventListener('click', async () => {
+  const text = valuesText(); let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    try { ok = document.execCommand('copy'); } catch (e2) {} ta.remove();
+  }
+  $('#copied').textContent = ok ? 'Copied.' : 'Copy failed. Values are shown below.';
+  if (!ok) { let pre = $('#vals'); if (!pre) { pre = document.createElement('pre'); pre.id = 'vals'; pre.style.cssText = 'font-size:11px;white-space:pre-wrap;user-select:all;margin:8px 0 0'; $('.panel').appendChild(pre); } pre.textContent = text; }
+});
+window.__labValues = valuesText;
+render();
+})();
+</script>
+</body>
+</html>
