@@ -398,6 +398,14 @@ body.kbd .screen { padding-bottom: 60vh; }
 .done-actions { display: grid; gap: 10px; width: 100%; max-width: 260px; margin-top: 32px; }
 
 .sources a[href*="creativecommons"] { white-space: nowrap; }
+
+/* Add: compact meaning so the Note field sits right under it */
+.compact { margin-top: 6px; }
+.c-row { margin: 0; padding: 3px 0; font-size: 15px; line-height: 1.5; color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; word-break: break-word; }
+.c-pos { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-right: 8px; vertical-align: 1px; }
+.c-sep { color: var(--ink-3); }
+.c-row .en-tag { margin-right: 4px; }
+.recent-item.first .note-input { margin-top: 10px; }
 /* ---------- Tab bar ---------- */
 .tabbar {
   position: fixed; z-index: 30;
@@ -1445,6 +1453,13 @@ function stateLine(w) {
   if (w.incomplete) return `<button class="small-btn" data-act="retry" data-id="${esc(w.id)}">Retry</button>`;
   return '';
 }
+// Add only: up to 3 senses per part of speech on one line each, so the Note field stays in sight.
+// All senses stay available in List and Review.
+function compactHTML(w) {
+  const ents = viewEntries(w);
+  if (!ents.length) return '';
+  return `<div class="compact">${ents.map(e => `<p class="c-row">${e.pos ? `<span class="c-pos">${esc(e.pos)}</span>` : ''}${e.senses.slice(0, 3).map(s => s.en ? `<span class="en-tag">EN</span>${esc(s.en)}` : esc(s.ja)).join('<span class="c-sep"> / </span>')}</p>`).join('')}</div>`;
+}
 function recentHead(w) {
   return `<div class="recent-head"><span class="recent-word">${esc(w.word)}</span>${ipaHTML(w)}${speakBtn(w.word, 'Pronounce ' + w.word, 'small')}</div>`;
 }
@@ -1457,7 +1472,7 @@ function renderRecent() {
     const w = byId(id);
     return `<li class="recent-item older" data-id="${esc(w.id)}">${recentHead(w)}${stateLine(w)}${summary(w) ? `<p class="recent-sum">${esc(summary(w))}</p>` : ''}</li>`;
   }).join('');
-  const dyn = w => recentHead(w) + stateLine(w) + entriesHTML(w, 'add');
+  const dyn = w => recentHead(w) + stateLine(w) + compactHTML(w);
   const cur = box.querySelector('li.recent-item.first');
   if (first && cur && cur.dataset.id === first.id) {
     // same word on top: refresh only its text, never the note field (it may be in use)
